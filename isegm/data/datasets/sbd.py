@@ -36,7 +36,7 @@ class SBDDataset(ISDataset):
         instances_mask = self.remove_buggy_masks(index, instances_mask)
         instances_ids, _ = get_labels_with_sizes(instances_mask)
 
-        return DSample(image, instances_mask, objects_ids=instances_ids, sample_id=index)
+        return DSample(image, instances_mask, objects_ids=instances_ids, sample_id=index), instances_mask, instances_ids
 
     def remove_buggy_masks(self, index, instances_mask):
         if self._buggy_mask_thresh > 0.0:

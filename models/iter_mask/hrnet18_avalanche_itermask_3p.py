@@ -1,5 +1,5 @@
 from isegm.utils.exp_imports.default import *
-MODEL_NAME = 'sbd_hrnet18'
+MODEL_NAME = 'avalanche_hrnet18'
 
 
 def main(cfg):
@@ -55,34 +55,35 @@ def train(model, cfg, model_cfg):
                                        merge_objects_prob=0.15,
                                        max_num_merged_objects=2)
 
-    trainset = LawineDataset(
-        cfg.LAWINE_PATH,
+    trainset = AvalancheDataset(
+        cfg.AVALANCHE_PATH,
         split='train',
         augmentator=train_augmentator,
+        keep_background_prob=0.01,
         points_sampler=points_sampler,
     )
 
-    valset = LawineDataset(
-        cfg.LAWINE_PATH,
+    valset = AvalancheDataset(
+        cfg.AVALANCHE_PATH,
         split='val',
         augmentator=val_augmentator,
+        keep_background_prob=0.01,
         points_sampler=points_sampler,
     )
-
     optimizer_params = {
         'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8
     }
 
     lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
-                           milestones=[200, 215], gamma=0.1)
+                           milestones=[35, 45], gamma=0.1)
     trainer = ISTrainer(model, cfg, model_cfg, loss_cfg,
                         trainset, valset,
                         optimizer='adam',
                         optimizer_params=optimizer_params,
                         lr_scheduler=lr_scheduler,
                         checkpoint_interval=[(0, 5), (100, 1)],
-                        image_dump_interval=3000,
+                        image_dump_interval=20,
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
                         max_num_next_clicks=3)
-    trainer.run(num_epochs=220)
+    trainer.run(num_epochs=50)
