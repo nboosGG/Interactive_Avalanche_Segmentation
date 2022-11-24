@@ -6,6 +6,7 @@ from pathlib import Path
 import cv2
 import torch
 import numpy as np
+import pandas as pd
 
 sys.path.insert(0, '.')
 from isegm.inference import utils
@@ -67,6 +68,8 @@ def parse_args():
                         help='The path to the config file.')
     parser.add_argument('--logs-path', type=str, default='',
                         help='The path to the evaluation logs. Default path: cfg.EXPS_PATH/evaluation_logs.')
+    parser.add_argument('--resize', nargs='+', type=int, default=None,
+                        help='Resizing of images according to input tuple (width, height)')
 
     args = parser.parse_args()
     if args.cpu:
@@ -87,6 +90,9 @@ def parse_args():
     else:
         args.logs_path = Path(args.logs_path)
 
+    if not args.resize == None:
+        args.resize = tuple(args.resize)
+
     return args, cfg
 
 
@@ -106,18 +112,15 @@ def main():
         for checkpoint_path in checkpoints_list:
             model = utils.load_is_model(checkpoint_path, args.device)
 
-            predictor_params, zoomin_params = get_predictor_and_zoomin_params(args, dataset_name)
-            predictor = get_predictor(model, args.mode, args.device,
-                                      prob_thresh=args.thresh,
-                                      predictor_params=predictor_params,
-                                      zoom_in_params=zoomin_params)
+            predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh)
 
-            vis_callback = get_prediction_vis_callback(logs_path, dataset_name, args.thresh) if args.vis_preds else None
+            vis_callback = get_prediction_vis_callback(logs_path, dataset_name, dataset, args.thresh) if args.vis_preds else None
             dataset_results = evaluate_dataset(dataset, predictor, pred_thr=args.thresh,
                                                max_iou_thr=args.target_iou,
                                                min_clicks=args.min_n_clicks,
                                                max_clicks=args.n_clicks,
-                                               callback=vis_callback)
+                                               callback=vis_callback,
+                                               resize=args.resize)
 
             row_name = args.mode if single_model_eval else checkpoint_path.stem
             if args.iou_analysis:
@@ -125,7 +128,7 @@ def main():
                                        logs_prefix, dataset_results,
                                        model_name=args.model_name)
 
-            save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_results,
+            save_results(args, row_name, dataset_name, dataset, logs_path, logs_prefix, dataset_results,
                          save_ious=single_model_eval and args.save_ious,
                          single_model_eval=single_model_eval,
                          print_header=print_header)
@@ -187,7 +190,7 @@ def get_checkpoints_list_and_logs_path(args, cfg):
     return checkpoints_list, logs_path, logs_prefix
 
 
-def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_results,
+def save_results(args, row_name, dataset_name, dataset, logs_path, logs_prefix, dataset_results,
                  save_ious=False, print_header=True, single_model_eval=False):
     all_ious, elapsed_time = dataset_results
     mean_spc, mean_spi = utils.get_time_metrics(all_ious, elapsed_time)
@@ -198,7 +201,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
     row_name = 'last' if row_name == 'last_checkpoint' else row_name
     model_name = str(logs_path.relative_to(args.logs_path)) + ':' + logs_prefix if logs_prefix else logs_path.stem
     header, table_row = utils.get_results_table(noc_list, over_max_list, row_name, dataset_name,
-                                                mean_spc, elapsed_time, args.n_clicks,
+                                                mean_spc, elapsed_time, args.n_clicks, resize=args.resize,
                                                 model_name=model_name)
 
     if args.print_ious:
@@ -214,7 +217,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
                                                                max_clicks=args.n_clicks)
             table_row += f' NoC@{args.target_iou:.1%} = {noc_list[0]:.2f};'
             table_row += f' >={args.n_clicks}@{args.target_iou:.1%} = {over_max_list[0]}'
-
+            
     if print_header:
         print(header)
     print(table_row)
@@ -222,8 +225,19 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
     if save_ious:
         ious_path = logs_path / 'ious' / (logs_prefix if logs_prefix else '')
         ious_path.mkdir(parents=True, exist_ok=True)
-        with open(ious_path / f'{dataset_name}_{args.eval_mode}_{args.mode}_{args.n_clicks}.pkl', 'wb') as fp:
-            pickle.dump(all_ious, fp)
+        image_iou = {}
+        for index in range(len(dataset)):
+            image_iou[dataset.dataset_samples[index]] = all_ious[index]
+
+        df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in image_iou.items()]))
+        df.to_csv(ious_path / f'{dataset_name}_{args.mode}_{args.n_clicks}.csv', index=False)
+
+        with open(ious_path / f'{dataset_name}_{args.mode}_{args.n_clicks}.pkl', 'wb') as fp:
+            pickle.dump({
+            'dataset_name': dataset_name,
+            'model_name': f'{model_name}_{args.mode}',
+            'data': image_iou
+        }, fp)
 
     name_prefix = ''
     if logs_prefix:
@@ -231,7 +245,7 @@ def save_results(args, row_name, dataset_name, logs_path, logs_prefix, dataset_r
         if not single_model_eval:
             name_prefix += f'{dataset_name}_'
 
-    log_path = logs_path / f'{name_prefix}{args.eval_mode}_{args.mode}_{args.n_clicks}.txt'
+    log_path = logs_path / f'{name_prefix}{args.mode}_{args.n_clicks}.txt'
     if log_path.exists():
         with open(log_path, 'a') as f:
             f.write(table_row + '\n')
@@ -262,12 +276,12 @@ def save_iou_analysis_data(args, dataset_name, logs_path, logs_prefix, dataset_r
         }, f)
 
 
-def get_prediction_vis_callback(logs_path, dataset_name, prob_thresh):
+def get_prediction_vis_callback(logs_path, dataset_name, dataset, prob_thresh):
     save_path = logs_path / 'predictions_vis' / dataset_name
     save_path.mkdir(parents=True, exist_ok=True)
 
     def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list):
-        sample_path = save_path / f'{sample_id}_{click_indx}.jpg'
+        sample_path = save_path / f'{dataset.dataset_samples[sample_id].replace(".jpg", "").replace(".JPG", "")}_{click_indx+1}.jpg'
         prob_map = draw_probmap(pred_probs)
         image_with_mask = draw_with_blend_and_clicks(image, pred_probs > prob_thresh, clicks_list=clicks_list)
         cv2.imwrite(str(sample_path), np.concatenate((image_with_mask, prob_map), axis=1)[:, :, ::-1])
