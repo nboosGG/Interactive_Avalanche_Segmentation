@@ -280,8 +280,11 @@ def get_prediction_vis_callback(logs_path, dataset_name, dataset, prob_thresh):
     save_path = logs_path / 'predictions_vis' / dataset_name
     save_path.mkdir(parents=True, exist_ok=True)
 
-    def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list):
+    def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list, not_improving=False):
         sample_path = save_path / f'{dataset.dataset_samples[sample_id].replace(".jpg", "").replace(".JPG", "")}_{click_indx+1}.jpg'
+        if not_improving:
+            sample_path=f'{str(sample_path).split(".")[0]}_not_improving.jpg'
+
         prob_map = draw_probmap(pred_probs)
         image_with_mask = draw_with_blend_and_clicks(image, pred_probs > prob_thresh, clicks_list=clicks_list)
         cv2.imwrite(str(sample_path), np.concatenate((image_with_mask, prob_map), axis=1)[:, :, ::-1])

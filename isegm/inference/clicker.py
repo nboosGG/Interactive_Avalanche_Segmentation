@@ -21,6 +21,9 @@ class Clicker(object):
     def make_next_click(self, pred_mask):
         assert self.gt_mask is not None
         click = self._get_next_click(pred_mask)
+        if self.not_improving:
+            return
+        
         self.add_click(click)
 
     def get_clicks(self, clicks_limit=None):
@@ -52,6 +55,8 @@ class Clicker(object):
             coords_y, coords_x = np.where(fn_mask_dt == fn_max_dist)  # coords is [y, x]
         else:
             coords_y, coords_x = np.where(fp_mask_dt == fp_max_dist)  # coords is [y, x]
+
+        self.not_improving = (fn_max_dist == 1 and fp_max_dist == 1)
 
         return Click(is_positive=is_positive, coords=(coords_y[0], coords_x[0]))
 

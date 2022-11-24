@@ -48,6 +48,12 @@ def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
 
         for click_indx in range(max_clicks):
             clicker.make_next_click(pred_mask)
+            
+            if clicker.not_improving:
+                if callback is not None:
+                    callback(image, gt_mask, pred_probs, sample_id, click_indx-1, clicker.clicks_list, clicker.not_improving)
+                break
+            
             pred_probs = predictor.get_prediction(clicker)
             pred_mask = pred_probs > pred_thr
             
@@ -62,5 +68,5 @@ def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
             if click_indx == max_clicks-1:
                 if callback is not None:
                     callback(image, gt_mask, pred_probs, sample_id, click_indx, clicker.clicks_list)
-                    
+
         return clicker.clicks_list, np.array(ious_list, dtype=np.float32), pred_probs
