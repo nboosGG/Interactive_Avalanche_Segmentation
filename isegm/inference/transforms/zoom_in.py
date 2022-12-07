@@ -8,10 +8,10 @@ from .base import BaseTransform
 
 class ZoomIn(BaseTransform):
     def __init__(self,
-                 target_size=400,
+                 target_size=800,
                  skip_clicks=1,
-                 expansion_ratio=1.4,
-                 min_crop_size=200,
+                 expansion_ratio=2,
+                 min_crop_size=400,
                  recompute_thresh_iou=0.5,
                  prob_thresh=0.50):
         super().__init__()
@@ -158,8 +158,8 @@ def get_roi_image_nd(image_nd, object_roi, target_size):
 
     with torch.no_grad():
         roi_image_nd = image_nd[:, :, rmin:rmax + 1, cmin:cmax + 1]
-        roi_image_nd = torch.nn.functional.interpolate(roi_image_nd, size=(new_height, new_width),
-                                                       mode='bilinear', align_corners=True)
+        #roi_image_nd = torch.nn.functional.interpolate(roi_image_nd, size=(new_height, new_width),
+        #                                               mode='bilinear', align_corners=True)
 
     return roi_image_nd
 

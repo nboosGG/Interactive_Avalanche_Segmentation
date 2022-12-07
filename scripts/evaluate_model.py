@@ -70,6 +70,8 @@ def parse_args():
                         help='The path to the evaluation logs. Default path: cfg.EXPS_PATH/evaluation_logs.')
     parser.add_argument('--resize', nargs='+', type=int, default=None,
                         help='Resizing of images according to input tuple (width, height)')
+    parser.add_argument('--zoomin', action='store_true', default=False,
+                        help='Choose whether or not to use zoomin')
 
     args = parser.parse_args()
     if args.cpu:
@@ -92,6 +94,11 @@ def parse_args():
 
     if not args.resize == None:
         args.resize = tuple(args.resize)
+    
+    if args.zoomin:
+        args.zoomin_params = dict()
+    else:
+        args.zoomin_params = None    
 
     return args, cfg
 
@@ -112,7 +119,7 @@ def main():
         for checkpoint_path in checkpoints_list:
             model = utils.load_is_model(checkpoint_path, args.device)
 
-            predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh)
+            predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh, zoom_in_params=args.zoomin_params)
 
             vis_callback = get_prediction_vis_callback(logs_path, dataset_name, dataset, args.thresh) if args.vis_preds else None
             dataset_results = evaluate_dataset(dataset, predictor, pred_thr=args.thresh,

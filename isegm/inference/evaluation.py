@@ -68,5 +68,5 @@ def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
             if click_indx == max_clicks-1:
                 if callback is not None:
                     callback(image, gt_mask, pred_probs, sample_id, click_indx, clicker.clicks_list)
-
+            
         return clicker.clicks_list, np.array(ious_list, dtype=np.float32), pred_probs
