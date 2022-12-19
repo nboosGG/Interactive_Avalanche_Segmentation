@@ -9,7 +9,7 @@ def main(cfg):
 
 def init_model(cfg):
     model_cfg = edict()
-    model_cfg.crop_size = (320, 480)
+    model_cfg.crop_size = (1000, 1000)
     model_cfg.num_max_points = 24
 
     model = HRNetModel(width=18, ocr_width=64, with_aux_output=True, use_leaky_relu=True,
@@ -56,7 +56,7 @@ def train(model, cfg, model_cfg):
                                        max_num_merged_objects=2)
 
     trainset = AvalancheDataset(
-        cfg.AVALANCHE_PATH,
+        cfg.AVALANCHE_PATH_3,
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -64,18 +64,18 @@ def train(model, cfg, model_cfg):
     )
 
     valset = AvalancheDataset(
-        cfg.AVALANCHE_PATH,
+        cfg.AVALANCHE_PATH_3,
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
         points_sampler=points_sampler,
     )
     optimizer_params = {
-        'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8
+        'lr': 5e-6, 'betas': (0.9, 0.999), 'eps': 1e-8
     }
 
     lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
-                           milestones=[35, 45], gamma=0.1)
+                           milestones=[50, 75], gamma=0.1)
     trainer = ISTrainer(model, cfg, model_cfg, loss_cfg,
                         trainset, valset,
                         optimizer='adam',
@@ -85,5 +85,5 @@ def train(model, cfg, model_cfg):
                         image_dump_interval=20,
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
-                        max_num_next_clicks=3)
-    trainer.run(num_epochs=50)
+                        max_num_next_clicks=10)
+    trainer.run(num_epochs=100)

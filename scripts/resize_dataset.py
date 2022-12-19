@@ -30,8 +30,8 @@ def main():
         mask_in = plt.imread(mask_path)
         print(mask_in.shape)
 
-        image_out = cv2.resize(image_in, dsize=(600,300))
-        mask_out = cv2.resize(mask_in, (600,300), interpolation =cv2.INTER_NEAREST)
+        image_out = cv2.resize(image_in, dsize=(600,400))
+        mask_out = cv2.resize(mask_in, (600,400), interpolation =cv2.INTER_NEAREST)
 
         image.imsave(image_path.replace(dataset_in, dataset_out), image_out)
         image.imsave(mask_path.replace(dataset_in, dataset_out), mask_out, cmap="gray")

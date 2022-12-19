@@ -65,7 +65,9 @@ def get_dataset(dataset_name, cfg):
     elif dataset_name == 'Avalanche2':
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_2)
     elif dataset_name == 'Avalanche3':
-        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_3)        
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_3)
+    elif dataset_name == 'Avalanche3_crop':
+        dataset = AvalancheDataset(cfg.AVALANCHE_CROP_PATH_3)   
     else:
         dataset = None
 

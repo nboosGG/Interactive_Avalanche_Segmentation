@@ -17,6 +17,7 @@ ADE20K_PATH: "./datasets/ADE20K"
 AVALANCHE_PATH_1: "./datasets/Lawine_1_instance/"
 AVALANCHE_PATH_2: "./datasets/Lawine_2_instance/"
 AVALANCHE_PATH_3: "./datasets/Lawine_3_instance/"
+AVALANCHE_CROP_PATH_3: "./datasets/Lawine_3_instance_crop_PIL_test/"
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification
