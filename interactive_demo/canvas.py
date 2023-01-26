@@ -68,11 +68,13 @@ class CanvasImage:
         self.vbar.configure(command=self.__scroll_y)
         # Bind events to the Canvas
         self.canvas.bind('<Configure>', lambda event: self.__size_changed())  # canvas is resized
-        self.canvas.bind('<Button-1>', self.__left_mouse_button)  # remember canvas position
+        self.canvas.bind('<ButtonPress-1>', self.__left_mouse_button_pressed)  # remember canvas position
         self.canvas.bind('<ButtonPress-3>', self.__right_mouse_button_pressed)  # remember canvas position
         self.canvas.bind('<ButtonPress-2>', self.__right_mouse_button_pressed)  # remember canvas position (MacOS)
+        self.canvas.bind('<ButtonRelease-1>', self.__left_mouse_button_released)  # remember canvas position
         self.canvas.bind('<ButtonRelease-3>', self.__right_mouse_button_released)  # remember canvas position
         self.canvas.bind('<ButtonRelease-2>', self.__right_mouse_button_released)  # remember canvas position (MacOS)
+        self.canvas.bind('<B1-Motion>', self.__left_mouse_button_motion)  # move canvas to the new position
         self.canvas.bind('<B3-Motion>', self.__right_mouse_button_motion)  # move canvas to the new position
         self.canvas.bind('<B2-Motion>', self.__right_mouse_button_motion)  # move canvas to the new position
         self.canvas.bind('<MouseWheel>', self.__wheel)  # zoom for Windows and MacOS, but not Linux
@@ -85,9 +87,16 @@ class CanvasImage:
         self.container = None
 
         self._click_callback = None
+        self.rect = None
+        self.start_x = None
+        self.start_y = None
+        self.x = self.y = 0
 
     def register_click_callback(self,  click_callback):
         self._click_callback = click_callback
+        
+    def register_widget_state_callback(self, widget_state_callback):
+        self._widget_state_callback = widget_state_callback
 
     def reload_image(self, image, reset_canvas=True):
         self.__original_image = image.copy()
@@ -252,6 +261,52 @@ class CanvasImage:
 
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
+            
+    def __left_mouse_button_pressed(self, event):
+        """ Remember previous coordinates for scrolling with the mouse """            
+        self._last_rb_click_time = time.time()
+        self._last_rb_click_event = event
+
+        # save mouse drag start position
+        self.start_x = self.canvas.canvasx(event.x)
+        self.start_y = self.canvas.canvasy(event.y)
+
+        # create rectangle if not yet exist
+        if not self.rect:
+            self.rect = self.canvas.create_rectangle(self.x, self.y, 1, 1, outline='red', tags="rectangle")
+
+    def __left_mouse_button_released(self, event):
+        time_delta = time.time() - self._last_rb_click_time
+        move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
+                               (event.y - self._last_rb_click_event.y) ** 2)
+        if time_delta > 0.5 or move_delta > 3:     
+            self._widget_state_callback()
+            return
+
+        if self._click_callback is None:
+            return
+
+        coords = self._get_click_coordinates(self._last_rb_click_event)
+
+        if coords is not None:
+            self._click_callback(is_positive=True, x=coords[0], y=coords[1])
+            
+    def __left_mouse_button_motion(self, event):
+        self.end_x = self.canvas.canvasx(event.x)
+        self.end_y = self.canvas.canvasy(event.y)
+
+        w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
+        if event.x > 0.9*w:
+            self.canvas.xview_scroll(1, 'units') 
+        elif event.x < 0.1*w:
+            self.canvas.xview_scroll(-1, 'units')
+        if event.y > 0.9*h:
+            self.canvas.yview_scroll(1, 'units') 
+        elif event.y < 0.1*h:
+            self.canvas.yview_scroll(-1, 'units')
+
+        # expand rectangle as you drag the mouse
+        self.canvas.coords(self.rect, self.start_x, self.start_y, self.end_x, self.end_y)    
 
     def __right_mouse_button_pressed(self, event):
         """ Remember previous coordinates for scrolling with the mouse """

@@ -115,6 +115,10 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.clicks_options_frame, text='Reset clicks', bg='#ea9999', fg='black', width=10, height=2,
                         state=tk.DISABLED, command=self._reset_last_object)
         self.reset_clicks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        self.reset_rectangle_button = \
+            FocusButton(self.clicks_options_frame, text='Reset Rectangle', bg='#ea9999', fg='black', width=10, height=2,
+                        state=tk.DISABLED, command=self._reset_rectangle)
+        self.reset_rectangle_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
         self.zoomin_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
@@ -315,10 +319,22 @@ class InteractiveDemoApp(ttk.Frame):
         if self.image_on_canvas is None:
             self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
             self.image_on_canvas.register_click_callback(self._click_callback)
+            self.image_on_canvas.register_widget_state_callback(self._set_click_dependent_widgets_state)
 
         self._set_click_dependent_widgets_state()
         if image is not None:
             self.image_on_canvas.reload_image(Image.fromarray(image), reset_canvas)
+            
+    def _reset_rectangle(self):
+        if self.image_on_canvas.rect is None:
+            return
+        
+        self.canvas.delete("rectangle")
+        self.image_on_canvas.rect = None
+        
+        self._update_image()
+        
+        self._set_click_dependent_widgets_state()            
 
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = tk.NORMAL if self.controller.is_incomplete_mask else tk.DISABLED
@@ -329,6 +345,11 @@ class InteractiveDemoApp(ttk.Frame):
         self.reset_clicks_button.configure(state=after_1st_click_state)
         self.zoomin_options_frame.set_frame_state(before_1st_click_state)
         self.brs_options_frame.set_frame_state(before_1st_click_state)
+        
+        if self.image_on_canvas.rect == None:
+            self.reset_rectangle_button.configure(state=tk.DISABLED)
+        else:
+            self.reset_rectangle_button.configure(state=tk.NORMAL)
 
         if self.state['brs_mode'].get() == 'NoBRS':
             self.net_clicks_entry.configure(state=tk.DISABLED)
