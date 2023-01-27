@@ -65,6 +65,7 @@ class InteractiveDemoApp(ttk.Frame):
             'alpha_blend': tk.DoubleVar(value=0.5),
             'click_radius': tk.IntVar(value=3),
         }
+        self.bbox = None
 
     def _add_menu(self):
         self.menubar = FocusLabelFrame(self, bd=1)
@@ -94,6 +95,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.canvas.grid(row=0, column=0, sticky='nswe', padx=5, pady=5)
 
         self.image_on_canvas = None
+        self.bbx = None
         self.canvas_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=5, pady=5)
 
     def _add_buttons(self):
@@ -115,10 +117,17 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.clicks_options_frame, text='Reset clicks', bg='#ea9999', fg='black', width=10, height=2,
                         state=tk.DISABLED, command=self._reset_last_object)
         self.reset_clicks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-        self.reset_rectangle_button = \
-            FocusButton(self.clicks_options_frame, text='Reset Rectangle', bg='#ea9999', fg='black', width=10, height=2,
-                        state=tk.DISABLED, command=self._reset_rectangle)
-        self.reset_rectangle_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        
+        self.bbx_options_frame = FocusLabelFrame(master, text="Bounding Box management")
+        self.bbx_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        self.confirm_bbx_button = \
+            FocusButton(self.bbx_options_frame, text='Confirm Bounding Box', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.DISABLED, command=self._confirm_bbx)
+        self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        self.reset_bbx_button = \
+            FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#5C5CFF', fg='black', width=15, height=2,
+                        state=tk.DISABLED, command=self._reset_bbx)
+        self.reset_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
         self.zoomin_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
@@ -301,6 +310,10 @@ class InteractiveDemoApp(ttk.Frame):
             'brs_opt_func_params': {'min_iou_diff': 1e-3},
             'lbfgs_params': {'maxfun': self.state['lbfgs_max_iters'].get()}
         }
+        
+        if self.bbox != None:
+            predictor_params['bbox'] = self.bbox
+            
         self.controller.reset_predictor(predictor_params)
 
     def _click_callback(self, is_positive, x, y):
@@ -317,7 +330,7 @@ class InteractiveDemoApp(ttk.Frame):
         image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
                                                   click_radius=self.state['click_radius'].get())
         if self.image_on_canvas is None:
-            self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas)
+            self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas, self.bbx)
             self.image_on_canvas.register_click_callback(self._click_callback)
             self.image_on_canvas.register_widget_state_callback(self._set_click_dependent_widgets_state)
 
@@ -325,17 +338,20 @@ class InteractiveDemoApp(ttk.Frame):
         if image is not None:
             self.image_on_canvas.reload_image(Image.fromarray(image), reset_canvas)
             
-    def _reset_rectangle(self):
-        if self.image_on_canvas.rect is None:
+    def _confirm_bbx(self):
+        self.bbox = self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2
+                
+        self._reset_predictor()
+            
+    def _reset_bbx(self):
+        if self.image_on_canvas.bbx is None:
             return
         
-        self.canvas.delete("rectangle")
-        self.image_on_canvas.rect = None
+        self.canvas.delete("bbx")
+        self.image_on_canvas.bbx = None
         
-        self._update_image()
+        self._update_image(reset_canvas=True)
         
-        self._set_click_dependent_widgets_state()            
-
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = tk.NORMAL if self.controller.is_incomplete_mask else tk.DISABLED
         before_1st_click_state = tk.DISABLED if self.controller.is_incomplete_mask else tk.NORMAL
@@ -345,11 +361,13 @@ class InteractiveDemoApp(ttk.Frame):
         self.reset_clicks_button.configure(state=after_1st_click_state)
         self.zoomin_options_frame.set_frame_state(before_1st_click_state)
         self.brs_options_frame.set_frame_state(before_1st_click_state)
-        
-        if self.image_on_canvas.rect == None:
-            self.reset_rectangle_button.configure(state=tk.DISABLED)
+                
+        if self.image_on_canvas.bbx == None:
+            self.reset_bbx_button.configure(state=tk.DISABLED)
+            self.confirm_bbx_button.configure(state=tk.DISABLED)
         else:
-            self.reset_rectangle_button.configure(state=tk.NORMAL)
+            self.reset_bbx_button.configure(state=tk.NORMAL)
+            self.confirm_bbx_button.configure(state=tk.NORMAL)
 
         if self.state['brs_mode'].get() == 'NoBRS':
             self.net_clicks_entry.configure(state=tk.DISABLED)

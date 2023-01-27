@@ -11,14 +11,15 @@ def get_predictor(net, brs_mode, device,
                   zoom_in_params=dict(),
                   predictor_params=None,
                   brs_opt_func_params=None,
-                  lbfgs_params=None):
+                  lbfgs_params=None,
+                  bbox=None):
     lbfgs_params_ = {
         'm': 20,
         'factr': 0,
         'pgtol': 1e-8,
         'maxfun': 20,
     }
-
+    
     predictor_params_ = {
         'optimize_after_n_clicks': 1
     }
@@ -41,7 +42,7 @@ def get_predictor(net, brs_mode, device,
     if brs_mode == 'NoBRS':
         if predictor_params is not None:
             predictor_params_.update(predictor_params)
-        predictor = BasePredictor(net, device, zoom_in=zoom_in, with_flip=with_flip, **predictor_params_)
+        predictor = BasePredictor(net, device, zoom_in=zoom_in, with_flip=with_flip, bbox=bbox, **predictor_params_)
     elif brs_mode.startswith('f-BRS'):
         predictor_params_.update({
             'net_clicks_limit': 8,
