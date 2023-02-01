@@ -14,15 +14,15 @@ class CropBBox(BaseTransform):
     def transform(self, image_nd, clicks_lists: List[List[Click]]):
         assert image_nd.shape[0] == 1 and len(clicks_lists) == 1
         self.image_changed = True
-
-        clicks_list = clicks_lists[0]
         
         self.original_image = image_nd
-        
+    
         rmin, rmax, cmin, cmax = self.bbox
         self._roi_image = image_nd[:, :, rmin:rmax + 1, cmin:cmax + 1]
         
+        clicks_list = clicks_lists[0]
         tclicks_lists = [self._transform_clicks(clicks_list)]
+        
         return self._roi_image.to(image_nd.device), tclicks_lists
 
     def inv_transform(self, prob_map):

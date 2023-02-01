@@ -247,7 +247,7 @@ class InteractiveDemoApp(ttk.Frame):
         messagebox.showinfo("About Demo", '\n'.join(text))
         
     def _finish_object(self):           
-        self._reset_bbox()
+        self._reset_bbox(reset_last_object=False)
         self.controller.finish_object()
         
     def _reset_last_object(self):
@@ -358,10 +358,11 @@ class InteractiveDemoApp(ttk.Frame):
             
         self.bbox = self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2   
                         
-        self._update_image(reset_canvas=False)        
+                        
+        self._reset_last_object()     
         self._reset_predictor()
             
-    def _reset_bbox(self):
+    def _reset_bbox(self, reset_last_object = True):
         if self.image_on_canvas.bbox is None:
             return
                
@@ -371,7 +372,8 @@ class InteractiveDemoApp(ttk.Frame):
         self.canvas.delete("bbox")
         self.image_on_canvas.bbox = None
         
-        self._update_image(reset_canvas=False)
+        if reset_last_object:
+            self._reset_last_object()
         self._reset_predictor()
         
     def _set_click_dependent_widgets_state(self):
@@ -388,7 +390,14 @@ class InteractiveDemoApp(ttk.Frame):
             self.reset_bbx_button.configure(state=tk.DISABLED)
             self.confirm_bbx_button.configure(state=tk.DISABLED)
         else:
+            self.state['zoomin_params']['use_zoom_in'].set(False)
+            self.state['zoomin_params']['fixed_crop'].set(False)
+            self.state['brs_mode'].set('NoBRS')
+            self._change_brs_mode()
+            
             self.reset_bbx_button.configure(state=tk.NORMAL)
+            self.zoomin_options_frame.set_frame_state(state=tk.DISABLED)
+            self.brs_options_frame.set_frame_state(state=tk.DISABLED)
             if self.bbox is None:
                 self.confirm_bbx_button.configure(state=tk.NORMAL)
             else:

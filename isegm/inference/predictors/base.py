@@ -31,7 +31,8 @@ class BasePredictor(object):
         self.to_tensor = transforms.ToTensor()
         
         if bbox is not None:
-            self.transforms = [CropBBox(bbox=bbox)]
+            self.transforms = [CropBBox(bbox)]
+            self.zoom_in = None
         else:
             self.transforms = [zoom_in] if zoom_in is not None else []
             if max_size is not None:
@@ -74,8 +75,8 @@ class BasePredictor(object):
         for t in reversed(self.transforms):
             prediction = t.inv_transform(prediction)
 
-        # if self.zoom_in is not None and self.zoom_in.check_possible_recalculation():
-        #     return self.get_prediction(clicker)
+        if self.zoom_in is not None and self.zoom_in.check_possible_recalculation():
+            return self.get_prediction(clicker)
 
         self.prev_prediction = prediction
         return prediction.cpu().numpy()[0, 0]
