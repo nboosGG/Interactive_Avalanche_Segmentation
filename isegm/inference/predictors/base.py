@@ -29,10 +29,13 @@ class BasePredictor(object):
             self.net = model
             
         self.to_tensor = transforms.ToTensor()
-        self.transforms = [CropBBox(bbox=bbox)] if bbox is not None else []
-        # self.transforms = [zoom_in] if zoom_in is not None else []
-        # if max_size is not None:
-        #     self.transforms.append(LimitLongestSide(max_size=max_size))
+        
+        if bbox is not None:
+            self.transforms = [CropBBox(bbox=bbox)]
+        else:
+            self.transforms = [zoom_in] if zoom_in is not None else []
+            if max_size is not None:
+                self.transforms.append(LimitLongestSide(max_size=max_size))
         self.transforms.append(SigmoidForPred())
         if with_flip:
             self.transforms.append(AddHorizontalFlip())
@@ -71,8 +74,8 @@ class BasePredictor(object):
         for t in reversed(self.transforms):
             prediction = t.inv_transform(prediction)
 
-        if self.zoom_in is not None and self.zoom_in.check_possible_recalculation():
-            return self.get_prediction(clicker)
+        # if self.zoom_in is not None and self.zoom_in.check_possible_recalculation():
+        #     return self.get_prediction(clicker)
 
         self.prev_prediction = prediction
         return prediction.cpu().numpy()[0, 0]

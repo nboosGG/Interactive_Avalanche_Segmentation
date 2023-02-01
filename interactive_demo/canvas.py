@@ -6,7 +6,7 @@ import time
 import math
 import tkinter as tk
 
-from tkinter import ttk
+from tkinter import messagebox, ttk
 from PIL import Image, ImageTk
 
 
@@ -49,7 +49,7 @@ class AutoScrollbar(ttk.Scrollbar):
 class CanvasImage:
     """ Display and zoom image """
 
-    def __init__(self, canvas_frame, canvas, bbx):
+    def __init__(self, canvas_frame, canvas, bbox):
         """ Initialize the ImageFrame """
         self.current_scale = 1.0  # scale for the canvas image zoom, public for outer classes
         self.__delta = 1.2  # zoom magnitude
@@ -87,10 +87,13 @@ class CanvasImage:
         self.container = None
 
         self._click_callback = None
-        self._bbx = None
-        self.bbx = bbx
+        
+        self._bbox = None
+        self.bbox = bbox
         self.x1 = None
         self.y1 = None
+        self.x2 = None
+        self.y2 = None
         self.x = self.y = 0
 
     def register_click_callback(self,  click_callback):
@@ -257,27 +260,30 @@ class CanvasImage:
     def __left_mouse_button_pressed(self, event):
         """ Remember previous coordinates for scrolling with the mouse """            
         self._last_rb_click_time = time.time()
-        self._last_rb_click_event = event
-
-        # save mouse drag start position
-        self.x1 = self.canvas.canvasx(event.x)
-        self.y1 = self.canvas.canvasy(event.y)
-        
-        self.bbox_x1, self.bbox_y1 = self._get_click_coordinates(event)
+        self._last_rb_click_event = event        
 
         # create rectangle if not yet exist
-        if not self.bbx:
-            self._bbx = self.canvas.create_rectangle(self.x, self.y, 1, 1, width=1, outline='red', tags="bbx")
+        if self.bbox is None:
+            # save mouse drag start position
+            self.x1 = self.canvas.canvasx(event.x)
+            self.y1 = self.canvas.canvasy(event.y)
+            
+            self.bbox_x1, self.bbox_y1 = self._get_click_coordinates(event)
+
+            self._bbox = self.canvas.create_rectangle(self.x, self.y, 1, 1, width=1, outline='red', tags="bbox")
 
     def __left_mouse_button_released(self, event):
         time_delta = time.time() - self._last_rb_click_time
         move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
                                (event.y - self._last_rb_click_event.y) ** 2)
-        if time_delta > 0.5 or move_delta > 3:
-            self.bbx = self._bbx     
+        if (time_delta > 0.5 or move_delta > 30) and self.bbox is None:
+            self.bbox = self._bbox     
             self.bbox_x2, self.bbox_y2 = self._get_click_coordinates(event)
             self._widget_state_callback()
             return        
+        elif (time_delta > 0.5 or move_delta > 30) and self.bbox is not None:
+            messagebox.showwarning("Warning", "Reset bounding box before creating a new one.")
+            return
 
         if self._click_callback is None:
             return
@@ -288,21 +294,22 @@ class CanvasImage:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
             
     def __left_mouse_button_motion(self, event):
-        self.x2 = self.canvas.canvasx(event.x)
-        self.y2 = self.canvas.canvasy(event.y)
+        if self.bbox is None:
+            self.x2 = self.canvas.canvasx(event.x)
+            self.y2 = self.canvas.canvasy(event.y)
 
-        w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
-        if event.x > 0.9*w:
-            self.canvas.xview_scroll(1, 'units') 
-        elif event.x < 0.1*w:
-            self.canvas.xview_scroll(-1, 'units')
-        if event.y > 0.9*h:
-            self.canvas.yview_scroll(1, 'units') 
-        elif event.y < 0.1*h:
-            self.canvas.yview_scroll(-1, 'units')
-
-        # expand rectangle as you drag the mouse
-        self.canvas.coords(self._bbx, self.x1, self.y1, self.x2, self.y2)    
+            w, h = self.canvas.winfo_width(), self.canvas.winfo_height()
+            if event.x > 0.9*w:
+                self.canvas.xview_scroll(1, 'units') 
+            elif event.x < 0.1*w:
+                self.canvas.xview_scroll(-1, 'units')
+            if event.y > 0.9*h:
+                self.canvas.yview_scroll(1, 'units') 
+            elif event.y < 0.1*h:
+                self.canvas.yview_scroll(-1, 'units')
+        
+            # expand rectangle as you drag the mouse
+            self.canvas.coords(self._bbox, self.x1, self.y1, self.x2, self.y2)    
 
     def __right_mouse_button_pressed(self, event):
         """ Remember previous coordinates for scrolling with the mouse """
