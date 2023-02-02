@@ -276,12 +276,12 @@ class CanvasImage:
         time_delta = time.time() - self._last_rb_click_time
         move_delta = math.sqrt((event.x - self._last_rb_click_event.x) ** 2 +
                                (event.y - self._last_rb_click_event.y) ** 2)
-        if (time_delta > 0.5 or move_delta > 30) and self.bbox is None:
+        if (time_delta > 0.5 or move_delta > 3) and self.bbox is None:
             self.bbox = self._bbox     
             self.bbox_x2, self.bbox_y2 = self._get_click_coordinates(event)
             self._widget_state_callback()
             return        
-        elif (time_delta > 0.5 or move_delta > 30) and self.bbox is not None:
+        elif (time_delta > 0.5 or move_delta > 3) and self.bbox is not None:
             messagebox.showwarning("Warning", "Reset bounding box before creating a new one.")
             return
 
