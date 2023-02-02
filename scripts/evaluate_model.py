@@ -69,7 +69,7 @@ def parse_args():
     parser.add_argument('--logs-path', type=str, default='',
                         help='The path to the evaluation logs. Default path: cfg.EXPS_PATH/evaluation_logs.')
     parser.add_argument('--resize', nargs='+', type=int, default=None,
-                        help='Resizing of images according to input tuple (width, height)')
+                        help='Resizing of images according to input tuple (width, height), e.g. --resize 3000 2000')
     parser.add_argument('--zoomin', action='store_true', default=False,
                         help='Choose whether or not to use zoomin')
 

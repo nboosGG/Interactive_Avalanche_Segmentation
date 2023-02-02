@@ -9,7 +9,7 @@ def main(cfg):
 
 def init_model(cfg):
     model_cfg = edict()
-    model_cfg.crop_size = (1000, 1000)
+    model_cfg.crop_size = (600, 600)
     model_cfg.num_max_points = 24
 
     model = HRNetModel(width=18, ocr_width=64, with_aux_output=True, use_leaky_relu=True,
@@ -56,7 +56,7 @@ def train(model, cfg, model_cfg):
                                        max_num_merged_objects=2)
 
     trainset = AvalancheDataset(
-        cfg.AVALANCHE_PATH_3,
+        cfg.AVALANCHE_TRAIN,
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -64,7 +64,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = AvalancheDataset(
-        cfg.AVALANCHE_PATH_3,
+        cfg.AVALANCHE_TRAIN,
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
