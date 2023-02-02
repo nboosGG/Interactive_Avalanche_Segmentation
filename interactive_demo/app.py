@@ -64,8 +64,7 @@ class InteractiveDemoApp(ttk.Frame):
 
             'alpha_blend': tk.DoubleVar(value=0.5),
             'click_radius': tk.IntVar(value=3),
-        }
-        self.bbox = None
+        }        
 
     def _add_menu(self):
         self.menubar = FocusLabelFrame(self, bd=1)
@@ -96,6 +95,8 @@ class InteractiveDemoApp(ttk.Frame):
 
         self.image_on_canvas = None
         self.canvas_frame.pack(side=tk.LEFT, fill="both", expand=True, padx=5, pady=5)
+        
+        self.bbox = None
 
     def _add_buttons(self):
         self.control_frame = FocusLabelFrame(self, text="Controls")
@@ -124,7 +125,7 @@ class InteractiveDemoApp(ttk.Frame):
                         state=tk.DISABLED, command=self._confirm_bbox)
         self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_bbx_button = \
-            FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#5C5CFF', fg='black', width=15, height=2,
+            FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._reset_bbox)
         self.reset_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
@@ -194,6 +195,9 @@ class InteractiveDemoApp(ttk.Frame):
 
             if len(filename) > 0:
                 image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
+                if self.image_on_canvas is not None:
+                    if self.image_on_canvas.bbox is not None:
+                        self._reset_bbox()
                 self.controller.set_image(image)
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
