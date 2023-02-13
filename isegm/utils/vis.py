@@ -2,7 +2,7 @@ from functools import lru_cache
 
 import cv2
 import numpy as np
-
+import time
 
 def visualize_instances(imask, bg_color=255,
                         boundaries_color=None, boundaries_width=1, boundaries_alpha=0.8):
@@ -109,27 +109,43 @@ def get_boundaries(instances_masks, boundaries_width=1):
     
  
 def draw_with_blend_and_clicks(img, mask=None, alpha=0.6, clicks_list=None, pos_color=(0, 255, 0),
-                               neg_color=(255, 0, 0), radius=4):
+                               neg_color=(255, 0, 0), radius=4, bbox=None, vis = None):
     result = img.copy()
-
+    mask_temp = mask.copy()
+    
     if mask is not None:
-        palette = get_palette(np.max(mask) + 1)
-        rgb_mask = palette[mask.astype(np.uint8)]
+        if bbox is not None:
+            rmin, rmax, cmin, cmax = bbox
+            result = result[rmin:rmax + 1, cmin:cmax + 1, :]
+            mask_temp = mask[rmin:rmax + 1, cmin:cmax + 1]
+            
+            palette = get_palette(np.max(mask_temp) + 1)
+            rgb_mask = palette[mask_temp.astype(np.uint8)]
 
-        mask_region = (mask > 0).astype(np.uint8)
-        result = result * (1 - mask_region[:, :, np.newaxis]) + \
-            (1 - alpha) * mask_region[:, :, np.newaxis] * result + \
-            alpha * rgb_mask
-        result = result.astype(np.uint8)
+            mask_region = (mask_temp > 0).astype(np.uint8)
+            result = result * (1 - mask_region[:, :, np.newaxis]) + \
+                (1 - alpha) * mask_region[:, :, np.newaxis] * result + \
+                alpha * rgb_mask
+            result = result.astype(np.uint8)
+            
+            vis[rmin:rmax + 1, cmin:cmax + 1, :] = result
+            result = vis
+            
+        else:
+            palette = get_palette(np.max(mask) + 1)
+            rgb_mask = palette[mask.astype(np.uint8)]
 
-        # result = (result * (1 - alpha) + alpha * rgb_mask).astype(np.uint8)
-
+            mask_region = (mask > 0).astype(np.uint8)
+            result = result * (1 - mask_region[:, :, np.newaxis]) + \
+                (1 - alpha) * mask_region[:, :, np.newaxis] * result + \
+                alpha * rgb_mask
+            result = result.astype(np.uint8)
+        
     if clicks_list is not None and len(clicks_list) > 0:
         pos_points = [click.coords for click in clicks_list if click.is_positive]
         neg_points = [click.coords for click in clicks_list if not click.is_positive]
 
         result = draw_points(result, pos_points, pos_color, radius=radius)
         result = draw_points(result, neg_points, neg_color, radius=radius)
-
     return result
 

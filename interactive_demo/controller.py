@@ -19,6 +19,7 @@ class InteractiveController:
         self._init_mask = None
 
         self.image = None
+        self.vis = None
         self.predictor = None
         self.device = device
         self.update_image_callback = update_image_callback
@@ -139,16 +140,16 @@ class InteractiveController:
             result_mask[self.current_object_prob > self.prob_thresh] = self.object_count + 1
         return result_mask
 
-    def get_visualization(self, alpha_blend, click_radius):
+    def get_visualization(self, alpha_blend, click_radius, bbox=None):
         if self.image is None:
             return None
 
         results_mask_for_vis = self.result_mask
-        vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
-                                         clicks_list=self.clicker.clicks_list, radius=click_radius)
-        if self.probs_history:
-            total_mask = self.probs_history[-1][0] > self.prob_thresh
-            results_mask_for_vis[np.logical_not(total_mask)] = 0
-            vis = draw_with_blend_and_clicks(vis, mask=results_mask_for_vis, alpha=alpha_blend)
+        if bbox is not None:           
+            self.vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
+                                            clicks_list=self.clicker.clicks_list, radius=click_radius, bbox=bbox, vis=self.vis)
+        else:
+            self.vis = draw_with_blend_and_clicks(self.image, mask=results_mask_for_vis, alpha=alpha_blend,
+                                            clicks_list=self.clicker.clicks_list, radius=click_radius, bbox=bbox)        
 
-        return vis
+        return self.vis

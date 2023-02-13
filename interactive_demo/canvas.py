@@ -263,7 +263,7 @@ class CanvasImage:
         self._last_rb_click_event = event        
 
         # create rectangle if not yet exist
-        if self.bbox is None:
+        if self.bbox is None and self._bbox is None:
             # save mouse drag start position
             self.x1 = self.canvas.canvasx(event.x)
             self.y1 = self.canvas.canvasy(event.y)
@@ -289,6 +289,10 @@ class CanvasImage:
             return
 
         coords = self._get_click_coordinates(self._last_rb_click_event)
+        
+        if self.bbox is None and self._bbox is not None:
+            self.canvas.delete("bbox")
+            self._bbox = None
 
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])

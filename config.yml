@@ -6,9 +6,9 @@ GRABCUT_PATH: "./datasets/GrabCut"
 BERKELEY_PATH: "./datasets/Berkeley"
 DAVIS_PATH: "./datasets/DAVIS"
 COCO_MVAL_PATH: "./datasets/COCO_MVal"
-AVALANCHE_PATH_1: "./datasets/Lawine_1_instance/"
-AVALANCHE_PATH_2: "./datasets/Lawine_2_instance/"
-AVALANCHE_PATH_3: "./datasets/Lawine_3_instance/"
+AVALANCHE_PATH_1: "./datasets/Avalanche_1/"
+AVALANCHE_PATH_2: "./datasets/Avalanche_2/"
+AVALANCHE_PATH_3: "./datasets/Avalanche_3/"
 
 # Train datasets
 SBD_PATH: "./datasets/SBD"
@@ -17,7 +17,7 @@ LVIS_PATH: "./datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
 PASCALVOC_PATH: "./datasets/PascalVOC"
 ADE20K_PATH: "./datasets/ADE20K"
-AVALANCHE_TRAIN: "./datasets/Lawine_train/"
+AVALANCHE_TRAIN: "./datasets/Avalanche_train/"
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification

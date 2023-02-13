@@ -344,7 +344,8 @@ class InteractiveDemoApp(ttk.Frame):
 
     def _update_image(self, reset_canvas=False):
         image = self.controller.get_visualization(alpha_blend=self.state['alpha_blend'].get(),
-                                                  click_radius=self.state['click_radius'].get())
+                                                  click_radius=self.state['click_radius'].get(),
+                                                  bbox=self.bbox)
         if self.image_on_canvas is None:
             self.image_on_canvas = CanvasImage(self.canvas_frame, self.canvas, self.bbox)
             self.image_on_canvas.register_click_callback(self._click_callback)
@@ -375,6 +376,7 @@ class InteractiveDemoApp(ttk.Frame):
         
         self.canvas.delete("bbox")
         self.image_on_canvas.bbox = None
+        self.image_on_canvas._bbox = None
         
         if reset_last_object:
             self._reset_last_object()
