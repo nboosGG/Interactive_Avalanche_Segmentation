@@ -4,6 +4,7 @@ from tkinter import messagebox, filedialog, ttk
 import cv2
 import numpy as np
 from PIL import Image
+from pathlib import Path
 
 from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
@@ -192,6 +193,7 @@ class InteractiveDemoApp(ttk.Frame):
                 ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff"),
                 ("All files", "*.*"),
             ], title="Chose an image")
+            self.image_name = Path(filename).stem
 
             if len(filename) > 0:
                 image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
@@ -209,7 +211,7 @@ class InteractiveDemoApp(ttk.Frame):
             if mask is None:
                 return
 
-            filename = filedialog.asksaveasfilename(parent=self.master, initialfile='mask.png', filetypes=[
+            filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
                 ("PNG image", "*.png"),
                 ("BMP image", "*.bmp"),
                 ("All files", "*.*"),
