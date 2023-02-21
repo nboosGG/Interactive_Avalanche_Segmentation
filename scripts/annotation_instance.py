@@ -1,25 +1,24 @@
 import os
 import shutil
-import matplotlib.pyplot as plt
 from pathlib import Path
 from matplotlib import image
 from pycocotools.coco import COCO
 
 # Dataset
-dataset = 'Lawine_1'
+dataset = 'Avalanche_1'
 
 # Input data
-imgage_original_dir = f"/home/oberson/slfhome/annotated_avalanches/{dataset}/images_original"
-ann_original_ile = f"/home/oberson/slfhome/annotated_avalanches/{dataset}/annotations_original/instances.json"
+imgage_original_dir = f"/data/annotated_avalanches/{dataset}/images_original" #Rohdaten aus dem Scalabel
+ann_original_file = f"/data/annotated_avalanches/{dataset}/annotations_original/instances.json"
 
 # Output folder
-img_instance_dir = f"/home/oberson/slfhome/annotated_avalanches/{dataset}/{dataset}_instance/images"
+image_instance_dir = f"/home/oberson/slfhome/annotated_avalanches/{dataset}/{dataset}_instance/images"
 mask_instance_dir = f"/home/oberson/slfhome/annotated_avalanches/{dataset}/{dataset}_instance/masks"
-Path(img_instance_dir).mkdir(parents=True, exist_ok=True)
+Path(image_instance_dir).mkdir(parents=True, exist_ok=True)
 Path(mask_instance_dir).mkdir(parents=True, exist_ok=True)
 
 # Load annotations
-coco = COCO(ann_original_ile)
+coco = COCO(ann_original_file)
 
 # Get categories and image IDs
 catIds = coco.getCatIds()
@@ -37,9 +36,8 @@ for imgId in imgIds:
         filename = img['file_name'].split('.')
         filename = f"{filename[0]}_{anns_id}.{filename[1]}"
         
-        img_path = os.path.join(img_instance_dir, filename)
-        mask_path = os.path.join(mask_instance_dir, filename.replace('jpg', 'png'))
-        mask_path = mask_path.replace('JPG', 'png')
+        img_path = os.path.join(image_instance_dir, filename)
+        mask_path = os.path.join(mask_instance_dir, filename.replace('jpg', 'png').replace('JPG', 'png'))
 
         try:
             mask = coco.annToMask(anns[0])>0

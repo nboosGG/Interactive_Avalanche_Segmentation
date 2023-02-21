@@ -297,7 +297,7 @@ class CanvasImage:
         if coords is not None:
             self._click_callback(is_positive=True, x=coords[0], y=coords[1])
             
-    def __left_mouse_button_motion(self, event):
+    def __left_mouse_button_motion(self, event): #draw bounding box for restraining the area of prediction
         if self.bbox is None:
             self.x2 = self.canvas.canvasx(event.x)
             self.y2 = self.canvas.canvasy(event.y)

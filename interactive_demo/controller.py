@@ -8,7 +8,7 @@ from isegm.utils.vis import draw_with_blend_and_clicks
 
 
 class InteractiveController:
-    def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.5):
+    def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.75):
         self.net = net
         self.prob_thresh = prob_thresh
         self.clicker = clicker.Clicker()

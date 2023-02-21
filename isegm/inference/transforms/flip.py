@@ -9,6 +9,7 @@ class AddHorizontalFlip(BaseTransform):
     def transform(self, image_nd, clicks_lists: List[List[Click]]):
         assert len(image_nd.shape) == 4
         image_nd = torch.cat([image_nd, torch.flip(image_nd, dims=[3])], dim=0)
+        #print(image_nd.shape)
 
         image_width = image_nd.shape[3]
         clicks_lists_flipped = []

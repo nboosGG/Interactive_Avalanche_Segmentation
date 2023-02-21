@@ -23,7 +23,7 @@ def init_model(cfg):
 
 
 def train(model, cfg, model_cfg):
-    cfg.batch_size = 28 if cfg.batch_size < 1 else cfg.batch_size
+    cfg.batch_size = 4 if cfg.batch_size < 1 else cfg.batch_size
     cfg.val_batch_size = cfg.batch_size
     crop_size = model_cfg.crop_size
 
@@ -35,8 +35,9 @@ def train(model, cfg, model_cfg):
 
     train_augmentator = Compose([
         UniformRandomResize(scale_range=(0.75, 1.25)),
-        Flip(),
-        RandomRotate90(),
+        HorizontalFlip(),
+        #Flip(),
+        #Random.Rotate90(),
         ShiftScaleRotate(shift_limit=0.03, scale_limit=0,
                          rotate_limit=(-3, 3), border_mode=0, p=0.75),
         PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0),
@@ -82,7 +83,7 @@ def train(model, cfg, model_cfg):
                         optimizer_params=optimizer_params,
                         lr_scheduler=lr_scheduler,
                         checkpoint_interval=[(0, 5), (100, 1)],
-                        image_dump_interval=20,
+                        image_dump_interval=1, #20
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
                         max_num_next_clicks=10)
