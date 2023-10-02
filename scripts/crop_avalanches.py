@@ -12,7 +12,7 @@ def main():
     target_size = 1000
     
     # Dataset
-    dataset_in = 'Avalanche_3' #DEFINE!!
+    dataset_in = 'Avalanche_4' #DEFINE!!
     dataset_out = 'Avalanche_train'
     
     # Input data
@@ -34,7 +34,9 @@ def main():
 
         image_in = Image.open(image_path)
         mask_in = Image.open(mask_path)
-                    
+
+        #print("shape of mask" ,np.shape(mask_in))
+
         mask = plt.imread(mask_path)[:, :, 0].astype(np.int32)
         mask[mask > 0] = 1
         
