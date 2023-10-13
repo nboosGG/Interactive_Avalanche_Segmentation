@@ -2,6 +2,7 @@ from isegm.utils.exp_imports.default import *
 MODEL_NAME = 'avalanche_hrnet18'
 
 
+
 def main(cfg):
     model, model_cfg = init_model(cfg)
     train(model, cfg, model_cfg)
@@ -29,20 +30,19 @@ def train(model, cfg, model_cfg):
 
     loss_cfg = edict()
     loss_cfg.instance_loss = NormalizedFocalLossSigmoid(alpha=0.5, gamma=2)
-    loss_cfg.instance_loss_weight = 1.0
+    loss_cfg.instance_loss_weight = 1 # default 1
     loss_cfg.instance_aux_loss = SigmoidBinaryCrossEntropyLoss()
-    loss_cfg.instance_aux_loss_weight = 0.4
+    loss_cfg.instance_aux_loss_weight = 0.4 # default 0.4
 
     train_augmentator = Compose([
-        UniformRandomResize(scale_range=(0.75, 1.25)),
+        UniformRandomResize(scale_range=(0.75, 1.25)), # keep always
         HorizontalFlip(),
-        #Flip(),
-        #Random.Rotate90(),
+        Rotate(limit=10),
         ShiftScaleRotate(shift_limit=0.03, scale_limit=0,
                          rotate_limit=(-3, 3), border_mode=0, p=0.75),
-        PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0),
+        PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0), # keep always
         RandomCrop(*crop_size),
-        RandomBrightnessContrast(brightness_limit=(-0.25, 0.25), contrast_limit=(-0.15, 0.4), p=0.75),
+        RandomBrightnessContrast(brightness_limit=(-0.25, 0.25), contrast_limit=(-0.15, 0.4), p=0.75), # brightness: -0.25, 0.25
         RGBShift(r_shift_limit=10, g_shift_limit=10, b_shift_limit=10, p=0.75)
     ], p=1.0)
 
@@ -65,18 +65,26 @@ def train(model, cfg, model_cfg):
     )
 
     valset = AvalancheDataset(
-        cfg.AVALANCHE_TRAIN,
+        cfg.AVALANCHE_VALI,
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
         points_sampler=points_sampler,
     )
+   #start of new
     optimizer_params = {
-        'lr': 5e-6, 'betas': (0.9, 0.999), 'eps': 1e-8
+        'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8 #lr default 5e-4
     }
+    lr_scheduler = partial(torch.optim.lr_scheduler.CosineAnnealingLR,T_max=100, eta_min=0) #T_max: max number of iterations, eta_min: minimum learning rate
 
-    lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
-                           milestones=[50, 75], gamma=0.1)
+    # copy of original
+    #optimizer_params = {
+    #   'lr': 5e-6, 'betas': (0.9, 0.999), 'eps': 1e-8 #lr default 5e-6 , betas: coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999)) eps: term added to the denominator to improve numerical stability (default: 1e-8)
+    #}
+    #lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
+                           #milestones=[50, 75], gamma=0.1) #decays the Lr by gamma/90% every step_size epochs
+
+
     trainer = ISTrainer(model, cfg, model_cfg, loss_cfg,
                         trainset, valset,
                         optimizer='adam',

@@ -46,7 +46,7 @@ def parse_args():
     group_iou_thresh = parser.add_mutually_exclusive_group()
     group_iou_thresh.add_argument('--target-iou', type=float, default=0.90,
                                   help='Target IoU threshold for the NoC metric. (min possible value = 0.8)')
-    group_iou_thresh.add_argument('--iou-analysis', action='store_true', default=False,
+    group_iou_thresh.add_argument('--iou-analysis', action='store_true', default=True, #default=False
                                   help='Plot mIoU(number of clicks) with target_iou=1.0.')
 
     parser.add_argument('--n-clicks', type=int, default=20,

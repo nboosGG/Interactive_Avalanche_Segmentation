@@ -10,6 +10,8 @@ from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
 from interactive_demo.wrappers import BoundedNumericalEntry, FocusHorizontalScale, FocusCheckButton, \
     FocusButton, FocusLabelFrame
+from datetime import datetime
+
 
 
 class InteractiveDemoApp(ttk.Frame):
@@ -49,8 +51,8 @@ class InteractiveDemoApp(ttk.Frame):
     def _init_state(self):
         self.state = {
             'zoomin_params': {
-                'use_zoom_in': tk.BooleanVar(value=True),
-                'fixed_crop': tk.BooleanVar(value=True),
+                'use_zoom_in': tk.BooleanVar(value=False),
+                'fixed_crop': tk.BooleanVar(value=False),
                 'skip_clicks': tk.IntVar(value=-1),
                 'target_size': tk.IntVar(value=min(400, self.limit_longest_size)),
                 'expansion_ratio': tk.DoubleVar(value=1.4)
@@ -203,6 +205,10 @@ class InteractiveDemoApp(ttk.Frame):
                 self.controller.set_image(image)
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
+        print(filename)
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S")
+        print(current_time)
 
     def _save_mask_callback(self):
         self.menubar.focus_set()

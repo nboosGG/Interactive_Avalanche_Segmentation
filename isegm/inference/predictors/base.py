@@ -32,6 +32,8 @@ class BasePredictor(object):
         
         if bbox is not None:
             self.transforms = [CropBBox(bbox)]
+            if max_size is not None:
+                self.transforms.append(LimitLongestSide(max_size=max_size))
             self.zoom_in = None
         else:
             self.transforms = [zoom_in] if zoom_in is not None else []

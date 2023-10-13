@@ -26,7 +26,7 @@ class Clicker(object):
         
         self.add_click(click)
 
-    def get_clicks(self, clicks_limit=None):
+    def get_clicks(self, clicks_limit=20): #=none if desired
         return self.clicks_list[:clicks_limit]
 
     def _get_next_click(self, pred_mask, padding=True):
@@ -72,6 +72,8 @@ class Clicker(object):
         self.clicks_list.append(click)
         if self.gt_mask is not None:
             self.not_clicked_map[coords[0], coords[1]] = False
+        print(click.indx+1) #print for doc file
+
 
     def _remove_last_click(self):
         click = self.clicks_list.pop()
@@ -111,6 +113,8 @@ class Click:
         self.is_positive = is_positive
         self.coords = coords
         self.indx = indx
+        #print(self.is_positive)
+        #print(self.coords)
 
     @property
     def coords_and_indx(self):

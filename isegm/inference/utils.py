@@ -65,7 +65,19 @@ def get_dataset(dataset_name, cfg):
     elif dataset_name == 'Avalanche2':
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_2)
     elif dataset_name == 'Avalanche3':
-        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_3)  
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_3)
+    elif dataset_name == 'Avalanche3a':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_4)
+    elif dataset_name == 'Avalanche3b':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_5)
+    elif dataset_name == 'Avalanche4':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_6)
+    elif dataset_name == 'Avalanche_train':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_7)
+    elif dataset_name == 'Avalanche_vali':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_8)
+    elif dataset_name == 'Avalanche_DG':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_9)
     else:
         dataset = None
 

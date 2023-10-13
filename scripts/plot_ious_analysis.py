@@ -85,7 +85,7 @@ def main():
             max_clicks = max(max_clicks, n_clicks)
 
             miou_str = ' '.join([f'mIoU@{click_id}={model_results[click_id-1]:.2%};'
-                                 for click_id in [1, 3, 5, 10, 20] if click_id <= len(model_results)])
+                                 for click_id in [1, 2, 3, 5, 7, 10, 20] if click_id <= len(model_results)]) # default for click_id in [1, 3, 5, 10, 20] if click_id <= len(model_results)])
             print(f'{model_name} on {dataset_name}:\n{miou_str}\n')
 
             plt.plot(1 + np.arange(n_clicks), model_results, linewidth=2, label=model_name)

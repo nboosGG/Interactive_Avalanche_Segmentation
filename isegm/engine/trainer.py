@@ -286,8 +286,11 @@ class ISTrainer(object):
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
                                  lambda: (output['instances'], batch_data['instances']))
+            #print(batch_data["instances"].unique())
             loss = self.add_loss('instance_aux_loss', loss, losses_logging, validation,
                                  lambda: (output['instances_aux'], batch_data['instances']))
+            #print(output["instances"].unique())
+            #print(output["instances_aux"].unique())
 
             if self.is_master:
                 with torch.no_grad():

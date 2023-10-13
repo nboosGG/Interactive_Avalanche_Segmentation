@@ -1,10 +1,14 @@
 import torch
 import numpy as np
+import os
 from tkinter import messagebox
 
 from isegm.inference import clicker
 from isegm.inference.predictors import get_predictor
 from isegm.utils.vis import draw_with_blend_and_clicks
+from datetime import datetime
+
+
 
 
 class InteractiveController:
@@ -33,6 +37,7 @@ class InteractiveController:
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
 
+
     def set_mask(self, mask):
         if self.image.shape[:2] != mask.shape[:2]:
             messagebox.showwarning("Warning", "A segmentation mask must have the same sizes as the current image!")
@@ -53,10 +58,12 @@ class InteractiveController:
         })
 
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
+        print(is_positive, "y", y, "x", x) #save this to file for user study
         self.clicker.add_click(click)
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
         if self._init_mask is not None and len(self.clicker) == 1:
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
+            self._save_mask_callback #save prediction for each step
 
         torch.cuda.empty_cache()
 
@@ -99,6 +106,9 @@ class InteractiveController:
         self._result_mask = self.result_mask
         self.object_count += 1
         self.reset_last_object()
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S") #add to file
+        print(current_time)
 
     def reset_last_object(self, update_image=True):
         self.states = []
