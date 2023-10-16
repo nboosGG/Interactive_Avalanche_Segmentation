@@ -1,6 +1,9 @@
 import torch
 import numpy as np
 import os
+import cv2
+import ntpath
+from pathlib import Path
 from tkinter import messagebox
 
 from isegm.inference import clicker
@@ -23,6 +26,7 @@ class InteractiveController:
         self._init_mask = None
 
         self.image = None
+        self.image_name = None #
         self.vis = None
         self.predictor = None
         self.device = device
@@ -30,12 +34,14 @@ class InteractiveController:
         self.predictor_params = predictor_params
         self.reset_predictor()
 
-    def set_image(self, image):
+    def set_image(self, image, filename):
         self.image = image
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
         self.object_count = 0
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
+        self.image_name = filename
+
 
 
     def set_mask(self, mask):
@@ -58,12 +64,28 @@ class InteractiveController:
         })
 
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
-        print(is_positive, "y", y, "x", x) #save this to file for user study
+
+        i = self.clicker.num_neg_clicks + self.clicker.num_pos_clicks + 1 ##+1 to account for python counting from 0
+        print("click:", i, is_positive, "x", x, "y", y) #save this to file for user study
+
         self.clicker.add_click(click)
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
         if self._init_mask is not None and len(self.clicker) == 1:
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
-            self._save_mask_callback #save prediction for each step
+            self._save_mask_callback
+
+            #save prediction for each step
+            ##
+        print(self.image_name)
+        #IMG = ntpath.basename(self.image_name)
+        #print("img", IMG)
+        i_i = str(i)
+        script_dir = "/data/ritm_interactive_segmentation/datasets/User_Study/Results"
+
+        #print("image", self.image_name)
+        filename = os.path.join(script_dir, self.image_name + '_' + i_i + '.png')
+        print(filename)
+
 
         torch.cuda.empty_cache()
 
@@ -73,6 +95,13 @@ class InteractiveController:
             self.probs_history.append((np.zeros_like(pred), pred))
 
         self.update_image_callback()
+
+        # exclude if it is not supposed to write the masks after each click
+        temp_mask = self.result_mask
+        temp_mask = temp_mask.astype(np.uint8)
+        temp_mask *= 255 // temp_mask.max()
+        if not cv2.imwrite(filename, temp_mask):
+            raise Exception("Could not write prediction")
 
     def undo_click(self):
         if not self.states:

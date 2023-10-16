@@ -72,7 +72,7 @@ class Clicker(object):
         self.clicks_list.append(click)
         if self.gt_mask is not None:
             self.not_clicked_map[coords[0], coords[1]] = False
-        print(click.indx+1) #print for doc file
+
 
 
     def _remove_last_click(self):

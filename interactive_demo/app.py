@@ -202,7 +202,7 @@ class InteractiveDemoApp(ttk.Frame):
                 if self.image_on_canvas is not None:
                     if self.image_on_canvas.bbox is not None:
                         self._reset_bbox()
-                self.controller.set_image(image)
+                self.controller.set_image(image, self.image_name)
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
         print(filename)
@@ -222,6 +222,7 @@ class InteractiveDemoApp(ttk.Frame):
                 ("BMP image", "*.bmp"),
                 ("All files", "*.*"),
             ], title="Save the current mask as...")
+            print(filename)
 
             if len(filename) > 0:
                 if mask.max() < 256:
