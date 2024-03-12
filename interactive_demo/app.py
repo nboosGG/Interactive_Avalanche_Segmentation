@@ -63,11 +63,12 @@ class InteractiveDemoApp(ttk.Frame):
             },
             'brs_mode': tk.StringVar(value='NoBRS'),
             'prob_thresh': tk.DoubleVar(value=0.5),
-            'lbfgs_max_iters': tk.IntVar(value=20),
+            'lbfgs_max_iters': tk.IntVar(value=20), #20
 
-            'alpha_blend': tk.DoubleVar(value=0.5),
-            'click_radius': tk.IntVar(value=3),
-        }        
+            'alpha_blend': tk.DoubleVar(value=0.1),
+            'click_radius': tk.IntVar(value=5),
+
+        }
 
     def _add_menu(self):
         self.menubar = FocusLabelFrame(self, bd=1)
@@ -82,6 +83,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.load_mask_btn = FocusButton(self.menubar, text='Load mask', command=self._load_mask_callback)
         self.load_mask_btn.pack(side=tk.LEFT)
         self.load_mask_btn.configure(state=tk.DISABLED)
+
+        # Add label to display the image name
+        self.image_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
+        self.image_name_label.pack(side=tk.LEFT, fill='x', expand=True)
 
         button = FocusButton(self.menubar, text='About', command=self._about_callback)
         button.pack(side=tk.LEFT)
@@ -131,6 +136,12 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._reset_bbox)
         self.reset_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        #dismiss bbox button
+        self.dismiss_bbx_button = \
+            FocusButton(self.bbx_options_frame, text='Dismiss Box', bg='#ffc966', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._dismiss_bbox)
+        self.dismiss_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
 
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
         self.zoomin_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
@@ -205,10 +216,13 @@ class InteractiveDemoApp(ttk.Frame):
                 self.controller.set_image(image, self.image_name)
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
-        print(filename)
+
+                # Update the image name label
+                self.image_name_label.config(text=f'Image: {self.image_name}')
+        #print(filename)
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
-        print(current_time)
+        #print(current_time)
 
     def _save_mask_callback(self):
         self.menubar.focus_set()
@@ -259,7 +273,7 @@ class InteractiveDemoApp(ttk.Frame):
 
         messagebox.showinfo("About Demo", '\n'.join(text))
         
-    def _finish_object(self):           
+    def _finish_object(self):
         self._reset_bbox(reset_last_object=False)
         self.controller.finish_object()
         
@@ -326,24 +340,24 @@ class InteractiveDemoApp(ttk.Frame):
             'brs_opt_func_params': {'min_iou_diff': 1e-3},
             'lbfgs_params': {'maxfun': self.state['lbfgs_max_iters'].get()}
         }
-        
+
         if self.bbox != None:
             predictor_params['bbox'] = self.bbox
-            
+
         self.controller.reset_predictor(predictor_params)
 
     def _click_callback(self, is_positive, x, y):
         self.canvas.focus_set()
-        
+
         if self.image_on_canvas.bbox is not None and self.bbox is None:
             messagebox.showwarning("Warning", "Confirm or reset the bounding box before selecting any points.")
             return
-        
+
         if self.bbox is not None:
             if not (self.bbox[0] <= y <= self.bbox[1]) or not (self.bbox[2] <= x <= self.bbox[3]):
                 messagebox.showwarning("Warning", "Selected point is not within the drawn bounding box.")
                 return
-        
+
         if self.image_on_canvas is None:
             messagebox.showwarning("Warning", "Please load an image first.")
             return
@@ -364,18 +378,23 @@ class InteractiveDemoApp(ttk.Frame):
         if image is not None:
             self.image_on_canvas.reload_image(Image.fromarray(image), reset_canvas)
             
-    def _confirm_bbox(self):                    
+    def _confirm_bbox(self):
         if self.image_on_canvas.bbox_x1 > self.image_on_canvas.bbox_x2:
             self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2 = self.image_on_canvas.bbox_x2, self.image_on_canvas.bbox_x1
         if self.image_on_canvas.bbox_y1 > self.image_on_canvas.bbox_y2:
             self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2 = self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_y1
-            
-        self.bbox = self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2   
-                        
-                        
-        self._reset_last_object()     
+
+        self.bbox = self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2
+
+
+        self._reset_last_object()
         self._reset_predictor()
-            
+
+    def _dismiss_bbox(self):
+        self._reset_bbox(reset_last_object=False)
+        self.controller.dismiss_bbox()
+        self._reset_predictor()
+
     def _reset_bbox(self, reset_last_object = True):
         if self.image_on_canvas.bbox is None:
             return

@@ -46,14 +46,14 @@ def parse_args():
     group_iou_thresh = parser.add_mutually_exclusive_group()
     group_iou_thresh.add_argument('--target-iou', type=float, default=0.90,
                                   help='Target IoU threshold for the NoC metric. (min possible value = 0.8)')
-    group_iou_thresh.add_argument('--iou-analysis', action='store_true', default=True, #default=False
+    group_iou_thresh.add_argument('--iou-analysis', action='store_true', default=True,  # default=False
                                   help='Plot mIoU(number of clicks) with target_iou=1.0.')
 
     parser.add_argument('--n-clicks', type=int, default=20,
                         help='Maximum number of clicks for the NoC metric.')
     parser.add_argument('--min-n-clicks', type=int, default=1,
                         help='Minimum number of clicks for the evaluation.')
-    parser.add_argument('--thresh', type=float, required=False, default=0.49,
+    parser.add_argument('--thresh', type=float, required=False, default=0.5,
                         help='The segmentation mask is obtained from the probability outputs using this threshold.')
     parser.add_argument('--clicks-limit', type=int, default=None)
     parser.add_argument('--eval-mode', type=str, default='cvpr',
@@ -94,11 +94,11 @@ def parse_args():
 
     if not args.resize == None:
         args.resize = tuple(args.resize)
-    
+
     if args.zoomin:
         args.zoomin_params = dict()
     else:
-        args.zoomin_params = None    
+        args.zoomin_params = None
 
     return args, cfg
 
@@ -119,9 +119,11 @@ def main():
         for checkpoint_path in checkpoints_list:
             model = utils.load_is_model(checkpoint_path, args.device)
 
-            predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh, zoom_in_params=args.zoomin_params)
+            predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh,
+                                      zoom_in_params=args.zoomin_params)
 
-            vis_callback = get_prediction_vis_callback(logs_path, dataset_name, dataset, args.thresh) if args.vis_preds else None
+            vis_callback = get_prediction_vis_callback(logs_path, dataset_name, dataset,
+                                                       args.thresh) if args.vis_preds else None
             dataset_results = evaluate_dataset(dataset, predictor, pred_thr=args.thresh,
                                                max_iou_thr=args.target_iou,
                                                min_clicks=args.min_n_clicks,
@@ -224,7 +226,7 @@ def save_results(args, row_name, dataset_name, dataset, logs_path, logs_prefix, 
                                                                max_clicks=args.n_clicks)
             table_row += f' NoC@{args.target_iou:.1%} = {noc_list[0]:.2f};'
             table_row += f' >={args.n_clicks}@{args.target_iou:.1%} = {over_max_list[0]}'
-            
+
     if print_header:
         print(header)
     print(table_row)
@@ -236,15 +238,15 @@ def save_results(args, row_name, dataset_name, dataset, logs_path, logs_prefix, 
         for index in range(len(dataset)):
             image_iou[dataset.dataset_samples[index]] = all_ious[index]
 
-        df = pd.DataFrame(dict([ (k,pd.Series(v)) for k,v in image_iou.items()]))
+        df = pd.DataFrame(dict([(k, pd.Series(v)) for k, v in image_iou.items()]))
         df.to_csv(ious_path / f'{dataset_name}_{args.mode}_{args.n_clicks}.csv', index=False)
 
         with open(ious_path / f'{dataset_name}_{args.mode}_{args.n_clicks}.pkl', 'wb') as fp:
             pickle.dump({
-            'dataset_name': dataset_name,
-            'model_name': f'{model_name}_{args.mode}',
-            'data': image_iou
-        }, fp)
+                'dataset_name': dataset_name,
+                'model_name': f'{model_name}_{args.mode}',
+                'data': image_iou
+            }, fp)
 
     name_prefix = ''
     if logs_prefix:
@@ -288,9 +290,9 @@ def get_prediction_vis_callback(logs_path, dataset_name, dataset, prob_thresh):
     save_path.mkdir(parents=True, exist_ok=True)
 
     def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list, not_improving=False):
-        sample_path = save_path / f'{dataset.dataset_samples[sample_id].replace(".jpg", "").replace(".JPG", "")}_{click_indx+1}.jpg'
+        sample_path = save_path / f'{dataset.dataset_samples[sample_id].replace(".jpg", "").replace(".JPG", "")}_{click_indx + 1}.jpg'
         if not_improving:
-            sample_path=f'{str(sample_path).split(".")[0]}_not_improving.jpg'
+            sample_path = f'{str(sample_path).split(".")[0]}_not_improving.jpg'
 
         prob_map = draw_probmap(pred_probs)
         image_with_mask = draw_with_blend_and_clicks(image, pred_probs > prob_thresh, clicks_list=clicks_list)

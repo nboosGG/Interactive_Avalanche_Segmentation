@@ -1,11 +1,49 @@
-## Interactive Avalanche Segmentation 
-based on "Reviving Iterative Training with Mask Guidance for Interactive Segmentation" as implemented of the following paper:
+## Reviving Iterative Training with Mask Guidance for Interactive Segmentation 
+
+<p align="center">
+    <a href="https://paperswithcode.com/sota/interactive-segmentation-on-grabcut?p=reviving-iterative-training-with-mask">
+        <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/reviving-iterative-training-with-mask/interactive-segmentation-on-grabcut"/>
+    </a>
+    <a href="https://paperswithcode.com/sota/interactive-segmentation-on-berkeley?p=reviving-iterative-training-with-mask">
+        <img src="https://img.shields.io/endpoint.svg?url=https://paperswithcode.com/badge/reviving-iterative-training-with-mask/interactive-segmentation-on-berkeley"/>
+    </a>
+</p>
+
+<p align="center">
+  <img src="./assets/img/teaser.gif" alt="drawing", width="420"/>
+  <img src="./assets/img/miou_berkeley.png" alt="drawing", width="400"/>
+</p>
+
+<p align="center">
+    <a href="https://arxiv.org/abs/2102.06583">
+        <img src="https://img.shields.io/badge/arXiv-2102.06583-b31b1b"/>
+    </a>
+    <a href="https://colab.research.google.com/github/saic-vul/ritm_interactive_segmentation/blob/master/notebooks/colab_test_any_model.ipynb">
+        <img src="https://colab.research.google.com/assets/colab-badge.svg" alt="Open In Colab"/>
+    </a>
+    <a href="https://opensource.org/licenses/MIT">
+        <img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="The MIT License"/>
+    </a>
+</p>
+
+This repository provides the source code for training and testing state-of-the-art click-based interactive segmentation models with the official PyTorch implementation of the following paper:
 
 > **Reviving Iterative Training with Mask Guidance for Interactive Segmentation**<br>
 > [Konstantin Sofiiuk](https://github.com/ksofiyuk), [Ilia Petrov](https://github.com/ptrvilya), [Anton Konushin](https://scholar.google.com/citations?user=ZT_k-wMAAAAJ) <br>
 > Samsung AI Center Moscow <br>
 > https://arxiv.org/abs/2102.06583
-
+>
+> **Abstract:** *Recent works on click-based interactive segmentation have demonstrated state-of-the-art results by 
+> using various inference-time optimization schemes. These methods are considerably more computationally expensive 
+> compared to feedforward approaches, as they require performing backward passes through a network during inference and 
+> are hard to deploy on mobile frameworks that usually support only forward passes. In this paper, we extensively 
+> evaluate various design choices for interactive segmentation and discover that new state-of-the-art results can be 
+> obtained without any additional optimization schemes. Thus, we propose a simple feedforward model for click-based 
+> interactive segmentation that employs the segmentation masks from previous steps. It allows not only to segment an 
+> entirely new object, but also to start with an external mask and correct it. When analyzing the performance of models
+> trained on different datasets, we observe that the choice of a training dataset greatly impacts the quality of 
+> interactive segmentation. We find that the models trained on a combination of COCO and LVIS with diverse and 
+> high-quality annotations show performance superior to all existing models.*
 
 
 ## Setting up an environment
@@ -22,6 +60,10 @@ You can also use our [Dockerfile](./Dockerfile) to build a container with the co
 If you want to run training or testing, you must configure the paths to the datasets in [config.yml](config.yml).
 
 ## Interactive Segmentation Demo
+
+<p align="center">
+  <img src="./assets/img/demo_gui.jpg" alt="drawing" width="99%"/>
+</p>
 
 The GUI is based on TkInter library and its Python bindings. You can try our interactive demo with any of the 
 [provided models](#pretrained-models). Our scripts automatically detect the architecture of the loaded model, just 
@@ -62,20 +104,70 @@ docker run -v "$PWD":/tmp/ \
 | <kbd>Scroll Wheel</kbd>                                       | Zoom an image in and out           |
 | <kbd>Right Mouse Button</kbd> + <br> <kbd>Move Mouse</kbd>    | Move an image                      |
 | <kbd>Space</kbd>                                              | Finish the current object mask     |
-| <kbd>Scroll Wheel pressed</kbd> + <br> <kbd>Move Mouse</kbd>  | Pan/ move the image                |
 
+<details>
+<summary><b>Initializing the ITER-M models with an external segmentation mask</b></summary>
+<p align="center">
+  <img src="./assets/img/modifying_external_mask.jpg" alt="drawing" width="80%"/>
+</p>
+  
+According to our paper, ITER-M models take an image, encoded user input, and a previous step mask as their input. Moreover, a user can initialize the model with an external mask before placing any clicks and correct this mask using the same interface.  As it turns out, our models successfully handle this situation and make it possible to change the mask.
+
+
+To initialize any ITER-M model with an external mask use the "Load mask" button in the menu bar.
+</details>
+
+<details>
+<summary><b>Interactive segmentation options</b></summary>
+<ul>
+    <li>ZoomIn (can be turned on/off using the checkbox)</li>
+    <ul>
+        <li><i>Skip clicks</i> - the number of clicks to skip before using ZoomIn.</li>
+        <li><i>Target size</i> - ZoomIn crop is resized so its longer side matches this value (increase for large objects).</li>
+        <li><i>Expand ratio</i> - object bbox is rescaled with this ratio before crop.</li>
+        <li><i>Fixed crop</i> - ZoomIn crop is resized to (<i>Target size</i>, <i>Target size</i>).</li>
+    </ul>
+    <li>BRS parameters (BRS type can be changed using the dropdown menu)</li>
+    <ul>
+        <li><i>Network clicks</i> - the number of first clicks that are included in the network's input. Subsequent clicks are processed only using BRS  (NoBRS ignores this option).</li>
+        <li><i>L-BFGS-B max iterations</i> - the maximum number of function evaluation for each step of optimization in BRS (increase for better accuracy and longer computational time for each click).</li>  
+    </ul>
+    <li>Visualisation parameters</li>
+    <ul>
+        <li><i>Prediction threshold</i> slider adjusts the threshold for binarization of probability map for the current object.</li> 
+        <li><i>Alpha blending coefficient</i> slider adjusts the intensity of all predicted masks.</li>
+        <li><i>Visualisation click radius</i> slider adjusts the size of red and green dots depicting clicks.</li>
+    </ul>
+</ul>
+</details>
 
 ## Datasets
 
-For avalanches we train on teh SLF or UIBK dataset and use pretrained weights from COCO+LVIS.
+We train all our models on SBD and COCO+LVIS and evaluate them on GrabCut, Berkeley, DAVIS, SBD and PascalVOC. We also provide links to additional datasets: ADE20k and OpenImages, that are used in ablation study.
 
 | Dataset   |                      Description             |           Download Link              |
 |-----------|----------------------------------------------|:------------------------------------:|
+|ADE20k     |  22k images with 434k instances (total)      |  [official site][ADE20k]             |
+|OpenImages |  944k images with 2.6M instances (total)     |  [official site][OpenImages]         |
+|MS COCO    |  118k images with 1.2M instances (train)     |  [official site][MSCOCO]             |
+|LVIS v1.0  |  100k images with 1.2M instances (total)     |  [official site][LVIS]               |
 |COCO+LVIS* |  99k images with 1.5M instances (train)      |  [original LVIS images][LVIS] + <br> [our combined annotations][COCOLVIS_annotation] |
+|SBD        |  8498 images with 20172 instances for (train)<br>2857 images with 6671 instances for (test) |[official site][SBD]|
+|Grab Cut   |  50 images with one object each (test)       |  [GrabCut.zip (11 MB)][GrabCut]      |
+|Berkeley   |  96 images with 100 instances (test)         |  [Berkeley.zip (7 MB)][Berkeley]     |
+|DAVIS      |  345 images with one object each (test)      |  [DAVIS.zip (43 MB)][DAVIS]          |
+|Pascal VOC |  1449 images with 3417 instances (validation)|  [official site][PascalVOC]          |
+|COCO_MVal  |  800 images with 800 instances (test)        |  [COCO_MVal.zip (127 MB)][COCO_MVal] |
 
-
+[ADE20k]: http://sceneparsing.csail.mit.edu/
+[OpenImages]: https://storage.googleapis.com/openimages/web/download.html
 [MSCOCO]: https://cocodataset.org/#download
 [LVIS]: https://www.lvisdataset.org/dataset
+[SBD]: http://home.bharathh.info/pubs/codes/SBD/download.html
+[GrabCut]: https://github.com/saic-vul/fbrs_interactive_segmentation/releases/download/v1.0/GrabCut.zip
+[Berkeley]: https://github.com/saic-vul/fbrs_interactive_segmentation/releases/download/v1.0/Berkeley.zip
+[DAVIS]: https://github.com/saic-vul/fbrs_interactive_segmentation/releases/download/v1.0/DAVIS.zip
+[PascalVOC]: http://host.robots.ox.ac.uk/pascal/VOC/
 [COCOLVIS_annotation]: https://github.com/saic-vul/ritm_interactive_segmentation/releases/download/v1.0/cocolvis_annotation.tar.gz
 [COCO_MVal]: https://github.com/saic-vul/fbrs_interactive_segmentation/releases/download/v1.0/COCO_MVal.zip
 

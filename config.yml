@@ -12,9 +12,18 @@ AVALANCHE_PATH_3: "./datasets/Avalanche_3/"
 AVALANCHE_PATH_4: "./datasets/Avalanche_3a/"
 AVALANCHE_PATH_5: "./datasets/Avalanche_3b/"
 AVALANCHE_PATH_6: "./datasets/Avalanche_4/" # avalanche 4 contains train and vali photos
-AVALANCHE_PATH_7: "./datasets/Avalanche_train/" # avalanche_train contains cropped train photos
-AVALANCHE_PATH_8: "./datasets/Avalanche_vali/" # avalanche_train contains cropped vali photos
+AVALANCHE_PATH_7: "./datasets/Avalanches_train/" # avalanche_train contains cropped train photos
+AVALANCHE_PATH_8: "./datasets/Avalanches_vali/" # avalanche_train contains cropped vali photos
 AVALANCHE_PATH_9: "./datasets/Avalanche_DG/" # avalanche Dg contains pics from Börterhorn/ unknown cam-domain gap
+AVALANCHE_PATH_10: "./datasets/Train_ours_uibk/" # contains the uibk train set together with ours
+AVALANCHE_PATH_11: "./datasets/Vali_ours_uibk/" #  contains the uibk test set together with ours
+AVALANCHE_PATH_12: "./datasets/Avalanche_uibk_test_all/" # contains the uibk test set
+AVALANCHE_PATH_13: "./datasets/Avalanche_uibk_test_all1/" # contains the uibk test set without glide snow cracks
+AVALANCHE_PATH_14: "./datasets/Vali_/" # contains the validation dataset from us and uibk
+AVALANCHE_PATH_15: "./datasets/Avalanche_uibk_train/" # contains the uibk train set
+AVALANCHE_PATH_16: "./datasets/Avalanches_uibk_vali1/" # contains uibk vali images wo glide cracks
+AVALANCHE_PATH_17: "./datasets/U_study_data/" # contains the 20 User study images/masks
+
 
 # Train datasets
 SBD_PATH: "./datasets/SBD"
@@ -23,8 +32,14 @@ LVIS_PATH: "./datasets/LVIS"
 OPENIMAGES_PATH: "./datasets/OpenImages"
 PASCALVOC_PATH: "./datasets/PascalVOC"
 ADE20K_PATH: "./datasets/ADE20K"
-AVALANCHE_TRAIN: "./datasets/Avalanche_train/"
-AVALANCHE_VALI: "./datasets/Avalanche_vali/"
+AVALANCHE_TRAIN: "./datasets/Avalanches_train/"
+AVALANCHE_VALI: "./datasets/Avalanches_vali/"
+AVALANCHE_TRAIN_uibk: "./datasets/Avalanches_uibk_train/"
+AVALANCHE_VALI_uibk: "./datasets/Avalanches_uibk_vali/"
+AVALANCHE_TRAIN_uibk_woGcracks: "./datasets/Avalanches_uibk_train1/" # uibk data with glide snow cracks sorted out
+AVALANCHE_VALI_uibk_woGcracks: "./datasets/Avalanches_uibk_vali1/" # uibk data with glide snow cracks sorted out
+AVALANCHE_train_combo: "./datasets/Train_ours_uibk/" #combo of uibk without glide snow cracks and ours
+AVALANCHE_test_combo: "./datasets/Vali_ours_uibk/" #combo of uibk without glide snow cracks and ours
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification

@@ -12,11 +12,12 @@ def main():
     target_size = 1000
     
     # Dataset
-    dataset_in = 'Avalanche_4' #DEFINE!!
-    dataset_out = 'Avalanche_train'
+    dataset_in = 'Avalanches_uibk_train_raw' #DEFINE!!
+    dataset_out = 'Avalanches_uibk_train'
     
     # Input data
     images_in_path = Path(f"/data/ritm_interactive_segmentation/datasets/{dataset_in}/images")
+    print(images_in_path)
     images_in = [x.name for x in images_in_path.glob('*.*')]
 
     # Output folder

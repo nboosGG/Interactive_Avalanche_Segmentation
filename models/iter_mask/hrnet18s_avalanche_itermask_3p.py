@@ -1,7 +1,7 @@
+from torchvision.transforms import Compose
+
 from isegm.utils.exp_imports.default import *
 MODEL_NAME = 'avalanche_hrnet18s'
-#MODEL_NAME = 'cocolvis_hrnet18s'
-
 
 def main(cfg):
     model, model_cfg = init_model(cfg)
@@ -54,25 +54,7 @@ def train(model, cfg, model_cfg):
                                        merge_objects_prob=0.15,
                                        max_num_merged_objects=2)
 
-    # trainset = CocoLvisDataset(
-    #     cfg.LVIS_v1_PATH,
-    #     split='train',
-    #     augmentator=train_augmentator,
-    #     min_object_area=1000,
-    #     keep_background_prob=0.05,
-    #     points_sampler=points_sampler,
-    #     epoch_len=30000,
-    #     stuff_prob=0.30
-    # )
-    #
-    # valset = CocoLvisDataset(
-    #     cfg.LVIS_v1_PATH,
-    #     split='val',
-    #     augmentator=val_augmentator,
-    #     min_object_area=1000,
-    #     points_sampler=points_sampler,
-    #     epoch_len=2000
-    # )
+
     trainset = AvalancheDataset(
         cfg.AVALANCHE_TRAIN,
         split='train',

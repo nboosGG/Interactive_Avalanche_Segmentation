@@ -40,8 +40,8 @@ def train(model, cfg, model_cfg):
         Rotate(limit=10),
         ShiftScaleRotate(shift_limit=0.03, scale_limit=0,
                          rotate_limit=(-3, 3), border_mode=0, p=0.75),
-        PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0), # keep always
-        RandomCrop(*crop_size),
+        PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0) , # keep always
+        RandomCrop(*crop_size), #keep always
         RandomBrightnessContrast(brightness_limit=(-0.25, 0.25), contrast_limit=(-0.15, 0.4), p=0.75), # brightness: -0.25, 0.25
         RGBShift(r_shift_limit=10, g_shift_limit=10, b_shift_limit=10, p=0.75)
     ], p=1.0)
@@ -57,7 +57,7 @@ def train(model, cfg, model_cfg):
                                        max_num_merged_objects=2)
 
     trainset = AvalancheDataset(
-        cfg.AVALANCHE_TRAIN,
+        cfg.AVALANCHE_TRAIN_uibk_woGcracks, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -65,19 +65,19 @@ def train(model, cfg, model_cfg):
     )
 
     valset = AvalancheDataset(
-        cfg.AVALANCHE_VALI,
+        cfg.AVALANCHE_VALI_uibk_woGcracks, #AVALANCHE_VALI
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
         points_sampler=points_sampler,
     )
-   #start of new
+   #Cosine LR
     optimizer_params = {
         'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8 #lr default 5e-4
     }
     lr_scheduler = partial(torch.optim.lr_scheduler.CosineAnnealingLR,T_max=100, eta_min=0) #T_max: max number of iterations, eta_min: minimum learning rate
 
-    # copy of original
+    # copy of original with Multistep LR
     #optimizer_params = {
     #   'lr': 5e-6, 'betas': (0.9, 0.999), 'eps': 1e-8 #lr default 5e-6 , betas: coefficients used for computing running averages of gradient and its square (default: (0.9, 0.999)) eps: term added to the denominator to improve numerical stability (default: 1e-8)
     #}
@@ -94,5 +94,5 @@ def train(model, cfg, model_cfg):
                         image_dump_interval=1, #20
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
-                        max_num_next_clicks=10)
+                        max_num_next_clicks=10) #10
     trainer.run(num_epochs=100)

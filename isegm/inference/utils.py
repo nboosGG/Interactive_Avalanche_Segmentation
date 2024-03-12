@@ -78,6 +78,22 @@ def get_dataset(dataset_name, cfg):
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_8)
     elif dataset_name == 'Avalanche_DG':
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_9)
+    elif dataset_name == 'Train_ours_uibk':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_10)
+    elif dataset_name == 'Vali_ours_uibk':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_11)
+    elif dataset_name == 'Avalanche_uibk_test':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_12)
+    elif dataset_name == 'Avalanche_uibk_test1': #test data without glide snow cracks
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_13)
+    elif dataset_name == 'Avalanche_uibk_vali_combo':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_14)
+    elif dataset_name == 'Avalanche_uibk_train':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_15)
+    elif dataset_name == 'Avalanche_uibk_vali1':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_16)
+    elif dataset_name == 'User_study':
+        dataset = AvalancheDataset(cfg.AVALANCHE_PATH_17)
     else:
         dataset = None
 

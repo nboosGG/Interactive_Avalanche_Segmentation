@@ -2,20 +2,19 @@ import torch
 import numpy as np
 import os
 import cv2
-import ntpath
+import csv
 from pathlib import Path
 from tkinter import messagebox
 
 from isegm.inference import clicker
+from isegm.inference import utils
 from isegm.inference.predictors import get_predictor
 from isegm.utils.vis import draw_with_blend_and_clicks
 from datetime import datetime
 
 
-
-
 class InteractiveController:
-    def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.75):
+    def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.49): #set to 0.49 to equalize with evaluation instead of 0.75
         self.net = net
         self.prob_thresh = prob_thresh
         self.clicker = clicker.Clicker()
@@ -42,6 +41,14 @@ class InteractiveController:
         self.update_image_callback(reset_canvas=True)
         self.image_name = filename
 
+        # added aval-e for saving data for User study
+        my_list = [self.image_name,] #write name of image to file
+        list2 = ["time_of_click", "click_count", "type_click", "x", "y", "IoU"]
+        with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a', newline='') as file: # Opening a CSV file in append mode
+            writer = csv.writer(file) # Using csv.writer to write the list to the CSV file
+            writer.writerow(my_list)  # Use writerow for single list
+            writer.writerow(list2)
+
 
 
     def set_mask(self, mask):
@@ -58,34 +65,21 @@ class InteractiveController:
         self.clicker.click_indx_offset = 1
 
     def add_click(self, x, y, is_positive):
+        now = datetime.now()
+        current_time = now.strftime("%H:%M:%S") #add to file
         self.states.append({
             'clicker': self.clicker.get_state(),
             'predictor': self.predictor.get_states()
         })
 
-        click = clicker.Click(is_positive=is_positive, coords=(y, x))
 
-        i = self.clicker.num_neg_clicks + self.clicker.num_pos_clicks + 1 ##+1 to account for python counting from 0
-        print("click:", i, is_positive, "x", x, "y", y) #save this to file for user study
+        click = clicker.Click(is_positive=is_positive, coords=(y, x))
 
         self.clicker.add_click(click)
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
         if self._init_mask is not None and len(self.clicker) == 1:
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
             self._save_mask_callback
-
-            #save prediction for each step
-            ##
-        print(self.image_name)
-        #IMG = ntpath.basename(self.image_name)
-        #print("img", IMG)
-        i_i = str(i)
-        script_dir = "/data/ritm_interactive_segmentation/datasets/User_Study/Results"
-
-        #print("image", self.image_name)
-        filename = os.path.join(script_dir, self.image_name + '_' + i_i + '.png')
-        print(filename)
-
 
         torch.cuda.empty_cache()
 
@@ -96,12 +90,30 @@ class InteractiveController:
 
         self.update_image_callback()
 
-        # exclude if it is not supposed to write the masks after each click
+        ##added aval-e
+        ## exclude from here if it is not supposed to write the masks after each click and save coordinates and IoU
+        i = self.clicker.num_neg_clicks + self.clicker.num_pos_clicks  ##+1 to account for python counting from 0
+        i_i = str(i)
+        script_dir = "/data/ritm_interactive_segmentation/datasets/User_Study/Results"
+        filename = os.path.join(script_dir,self.image_name + '_' + i_i + '.png')
         temp_mask = self.result_mask
+        gt_dir = "/data/ritm_interactive_segmentation/datasets/User_Study/GT-masks"
+        gt_file = os.path.join(gt_dir, self.image_name +'.png')
+        #print("gt", gt_file)
+        gt_mask = cv2.imread(gt_file)[:, :, 0] > 127
+        iou = utils.get_iou(gt_mask, temp_mask)
+        #print("IoU:", iou)
         temp_mask = temp_mask.astype(np.uint8)
         temp_mask *= 255 // temp_mask.max()
         if not cv2.imwrite(filename, temp_mask):
             raise Exception("Could not write prediction")
+        #print("click:", i, is_positive, "x", x, "y", y, "IoU", iou) #save this to file for user study
+        my_list = [current_time, i, is_positive, x, y, iou]
+
+        with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a',
+                  newline='') as file:  # Opening a CSV file in append mode
+            writer = csv.writer(file)  # Using csv.writer to write the list to the CSV file
+            writer.writerow(my_list)  # Use writerow for single list
 
     def undo_click(self):
         if not self.states:
@@ -114,6 +126,12 @@ class InteractiveController:
         if not self.probs_history:
             self.reset_init_mask()
         self.update_image_callback()
+        my_list = ["last click undone"]
+
+        with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a',
+                  newline='') as file:  # Opening a CSV file in append mode
+            writer = csv.writer(file)  # Using csv.writer to write the list to the CSV file
+            writer.writerow(my_list)  # Use writerow for single list
 
     def partially_finish_object(self):
         object_prob = self.current_object_prob
@@ -138,6 +156,10 @@ class InteractiveController:
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S") #add to file
         print(current_time)
+        my_list = [current_time, "avalanche finished"] #write name of image to file
+        with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a', newline='') as file: # Opening a CSV file in append mode
+            writer = csv.writer(file) # Using csv.writer to write the list to the CSV file
+            writer.writerow(my_list)  # Use writerow for single list
 
     def reset_last_object(self, update_image=True):
         self.states = []
@@ -192,3 +214,6 @@ class InteractiveController:
                                             clicks_list=self.clicker.clicks_list, radius=click_radius, bbox=bbox)        
 
         return self.vis
+
+    def dismiss_bbox(self):
+        pass

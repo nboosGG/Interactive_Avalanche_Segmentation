@@ -25,8 +25,13 @@ def evaluate_dataset(dataset, predictor, resize=None, **kwargs):
         gt_mask = sample.gt_mask
 
         if not resize==None:
-            image = cv2.resize(image, dsize=resize)
-            gt_mask = cv2.resize(gt_mask, resize, interpolation=cv2.INTER_NEAREST)
+            img_height, img_width, _ = image.shape
+            target_width, target_height = resize
+
+            # Check if the image dimensions are larger than the resize dimensions, if yes, resize
+            if img_width > target_width or img_height > target_height:
+                image = cv2.resize(image, dsize=resize)
+                gt_mask = cv2.resize(gt_mask, resize, interpolation=cv2.INTER_NEAREST)
 
         _, sample_ious, _ = evaluate_sample(image, gt_mask, predictor,
                                             sample_id=index, **kwargs)
@@ -37,7 +42,7 @@ def evaluate_dataset(dataset, predictor, resize=None, **kwargs):
     return all_ious, elapsed_time
 
 def evaluate_sample(image, gt_mask, predictor, max_iou_thr,
-                    pred_thr=0.49, min_clicks=1, max_clicks=20,
+                    pred_thr=0.5, min_clicks=1, max_clicks=20,
                     sample_id=None, callback=None):
     clicker = Clicker(gt_mask=gt_mask)
     pred_mask = np.zeros_like(gt_mask)
