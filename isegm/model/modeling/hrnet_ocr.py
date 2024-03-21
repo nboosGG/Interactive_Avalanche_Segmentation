@@ -400,6 +400,7 @@ class HighResolutionNet(nn.Module):
         model_dict = self.state_dict()
 
         if not os.path.exists(pretrained_path):
+            print("pretrained path: ", pretrained_path)
             print(f'\nFile "{pretrained_path}" does not exist.')
             print('You need to specify the correct path to the pre-trained weights.\n'
                   'You can download the weights for HRNet from the repository:\n'

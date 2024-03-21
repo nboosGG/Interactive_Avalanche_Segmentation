@@ -18,7 +18,8 @@ def init_model(cfg):
 
     model.to(cfg.device)
     model.apply(initializer.XavierGluon(rnd_type='gaussian', magnitude=2.0))
-    model.feature_extractor.load_pretrained_weights(cfg.IMAGENET_PRETRAINED_MODELS.HRNETV2_W18)
+    #model.feature_extractor.load_pretrained_weights(cfg.IMAGENET_PRETRAINED_MODELS.HRNETV2_W18)
+    model.feature_extractor.load_pretrained_weights(cfg.weights)
 
     return model, model_cfg
 
@@ -57,7 +58,7 @@ def train(model, cfg, model_cfg):
                                        max_num_merged_objects=2)
 
     trainset = AvalancheDataset(
-        cfg.AVALANCHE_TRAIN_uibk_woGcracks, #AVALANCHE_TRAIN
+        cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -65,7 +66,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = AvalancheDataset(
-        cfg.AVALANCHE_VALI_uibk_woGcracks, #AVALANCHE_VALI
+        cfg.AVALANCHE_VALI, #AVALANCHE_VALI
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
