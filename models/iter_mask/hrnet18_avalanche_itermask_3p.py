@@ -1,4 +1,5 @@
 from isegm.utils.exp_imports.default import *
+from isegm.data.datasets.drone_avalanche import DroneAvalancheDataset
 MODEL_NAME = 'avalanche_hrnet18'
 
 
@@ -56,8 +57,19 @@ def train(model, cfg, model_cfg):
     points_sampler = MultiPointSampler(model_cfg.num_max_points, prob_gamma=0.80,
                                        merge_objects_prob=0.15,
                                        max_num_merged_objects=2)
-
+    
     trainset = AvalancheDataset(
+        cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
+        split='train',
+        augmentator=train_augmentator,
+        keep_background_prob=0.01,
+        points_sampler=points_sampler,
+    )
+
+    for key in cfg:
+        print("item: ", key, cfg[key])
+
+    trainset2 = DroneAvalancheDataset(
         cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
@@ -71,7 +83,16 @@ def train(model, cfg, model_cfg):
         augmentator=val_augmentator,
         keep_background_prob=0.01,
         points_sampler=points_sampler,
+    ) 
+
+    valset2 = DroneAvalancheDataset(
+        cfg.AVALANCHE_VALI, #AVALANCHE_VALI
+        split='val',
+        augmentator=val_augmentator,
+        keep_background_prob=0.01,
+        points_sampler=points_sampler,
     )
+    
    #Cosine LR
     optimizer_params = {
         'lr': 5e-4, 'betas': (0.9, 0.999), 'eps': 1e-8 #lr default 5e-4
@@ -85,7 +106,6 @@ def train(model, cfg, model_cfg):
     #lr_scheduler = partial(torch.optim.lr_scheduler.MultiStepLR,
                            #milestones=[50, 75], gamma=0.1) #decays the Lr by gamma/90% every step_size epochs
 
-
     trainer = ISTrainer(model, cfg, model_cfg, loss_cfg,
                         trainset, valset,
                         optimizer='adam',
@@ -96,4 +116,5 @@ def train(model, cfg, model_cfg):
                         metrics=[AdaptiveIoU()],
                         max_interactive_points=model_cfg.num_max_points,
                         max_num_next_clicks=10) #10
+    
     trainer.run(num_epochs=100)
