@@ -1,5 +1,9 @@
 import numpy as np
 
+import cv2
 
-tup = (5,6)
-print(type(tup), tup[0])
+
+path = "/home/boosnoel/Documents/data/small_dataset/dsm/2.tif"
+
+img = cv2.imread(path)
+print(type(img))

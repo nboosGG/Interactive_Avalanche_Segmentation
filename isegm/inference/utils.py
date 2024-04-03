@@ -4,7 +4,8 @@ from pathlib import Path
 import torch
 import numpy as np
 
-from isegm.data.datasets import GrabCutDataset, BerkeleyDataset, DavisDataset, SBDEvaluationDataset, PascalVocDataset, AvalancheDataset
+from isegm.data.datasets.drone_avalanche import DroneAvalancheDataset
+from isegm.data.datasets import GrabCutDataset, BerkeleyDataset, DavisDataset, SBDEvaluationDataset, PascalVocDataset, AvalancheDataset #, DroneAvalancheDataset
 from isegm.utils.serialization import load_model
 
 
@@ -94,6 +95,8 @@ def get_dataset(dataset_name, cfg):
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_16)
     elif dataset_name == 'User_study':
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_17)
+    elif dataset_name == 'Small_dataset':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_18)
     else:
         dataset = None
 

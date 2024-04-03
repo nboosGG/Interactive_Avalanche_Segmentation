@@ -10,11 +10,9 @@ from isegm.data.sample import DSample
 
 class DroneAvalancheDataset(ISDataset):
     def __init__(self, dataset_path, split=None,
-                 ortho_dir_name='ortho', dsm_dir_name='dsm', masks_dir_name='masks', **kwargs):
+                 ortho_dir_name='images', dsm_dir_name='dsm', masks_dir_name='masks', **kwargs):
         super(DroneAvalancheDataset, self).__init__(**kwargs)
         assert split in {None, 'train', 'val'}
-
-        print("in droneavalanchedataset juhuiii")
 
         dataset_path = "datasets/small_dataset/"
         
@@ -45,8 +43,6 @@ class DroneAvalancheDataset(ISDataset):
 
         self.dataset_samples = self.dataset_ortho
 
-        
-
     def get_sample(self, index) -> DSample:
         ortho_name = self.dataset_ortho[index]
         dsm_name = self.dataset_dsm[index]
@@ -58,6 +54,7 @@ class DroneAvalancheDataset(ISDataset):
         #print("paths: ", ortho_path, dsm_path, mask_path)
 
         ortho = cv2.imread(ortho_path)
+        #print("pure ortho shaep: ", np.shape(ortho))
         #ortho = cv2.cvtColor(ortho, cv2.COLOR_BGR2RGB)
         #dsm = cv2.imread(dsm_path, cv2.IMREAD_UNCHANGED).astype(np.int32)
         dsm = cv2.imread(dsm_path, cv2.IMREAD_GRAYSCALE)

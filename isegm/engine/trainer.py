@@ -248,6 +248,12 @@ class ISTrainer(object):
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
             orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
 
+            dsm = image[:,3,:,:]
+            ortho = image[:,:3,:,:]
+            image = ortho
+            batch_data['images']= ortho #delete the dsm stuff, since rest of code not made for 4 dimension
+            #print("shape of image: ", image.shape)
+
             prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
 
             last_click_indx = None
@@ -279,10 +285,11 @@ class ISTrainer(object):
                     prev_output[zero_mask] = torch.zeros_like(prev_output[zero_mask])
 
             batch_data['points'] = points
+            print("net input shape: ", net_input.shape)
 
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
             output = self.net(net_input, points)
-
+ 
             loss = 0.0
             loss = self.add_loss('instance_loss', loss, losses_logging, validation,
                                  lambda: (output['instances'], batch_data['instances']))

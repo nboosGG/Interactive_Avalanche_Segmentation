@@ -58,7 +58,13 @@ def train(model, cfg, model_cfg):
                                        merge_objects_prob=0.15,
                                        max_num_merged_objects=2)
     
-    trainset = AvalancheDataset(
+    
+
+    #for key in cfg:
+    #    print("item: ", key, cfg[key])
+
+    
+    trainset = DroneAvalancheDataset(
         cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
@@ -66,10 +72,16 @@ def train(model, cfg, model_cfg):
         points_sampler=points_sampler,
     )
 
-    for key in cfg:
-        print("item: ", key, cfg[key])
+    valset = DroneAvalancheDataset(
+        cfg.AVALANCHE_VALI, #AVALANCHE_VALI
+        split='val',
+        augmentator=val_augmentator,
+        keep_background_prob=0.01,
+        points_sampler=points_sampler,
+    )
+    """
 
-    trainset2 = DroneAvalancheDataset(
+    trainset = AvalancheDataset(
         cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
@@ -83,15 +95,8 @@ def train(model, cfg, model_cfg):
         augmentator=val_augmentator,
         keep_background_prob=0.01,
         points_sampler=points_sampler,
-    ) 
-
-    valset2 = DroneAvalancheDataset(
-        cfg.AVALANCHE_VALI, #AVALANCHE_VALI
-        split='val',
-        augmentator=val_augmentator,
-        keep_background_prob=0.01,
-        points_sampler=points_sampler,
     )
+    """
     
    #Cosine LR
     optimizer_params = {

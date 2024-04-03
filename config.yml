@@ -23,6 +23,7 @@ AVALANCHE_PATH_14: "./datasets/Vali_/" # contains the validation dataset from us
 AVALANCHE_PATH_15: "./datasets/Avalanche_uibk_train/" # contains the uibk train set
 AVALANCHE_PATH_16: "./datasets/Avalanches_uibk_vali1/" # contains uibk vali images wo glide cracks
 AVALANCHE_PATH_17: "./datasets/U_study_data/" # contains the 20 User study images/masks
+AVALANCHE_PATH_18: "./datasets/small_dataset/" # first small dataset for ortho + dsm
 
 
 # Train datasets
