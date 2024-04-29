@@ -17,6 +17,8 @@ from isegm.utils.serialization import get_config_repr
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
 from .optimizer import get_optimizer
 
+from code_noel.adjusted_models import *
+
 
 class ISTrainer(object):
     def __init__(self, model, cfg, model_cfg, loss_cfg,
@@ -85,6 +87,8 @@ class ISTrainer(object):
 
         self.optim = get_optimizer(model, optimizer, optimizer_params)
         model = self._load_weights(model)
+
+        #model = change_model(model)
 
         if cfg.multi_gpu:
             model = get_dp_wrapper(cfg.distributed)(model, device_ids=cfg.gpu_ids,
@@ -248,10 +252,12 @@ class ISTrainer(object):
             image, gt_mask, points = batch_data['images'], batch_data['instances'], batch_data['points']
             orig_image, orig_gt_mask, orig_points = image.clone(), gt_mask.clone(), points.clone()
 
+            #print("original image input in is_trainer: ", image.shape)
+
             dsm = image[:,3,:,:]
             ortho = image[:,:3,:,:]
-            image = ortho
-            batch_data['images']= ortho #delete the dsm stuff, since rest of code not made for 4 dimension
+            #image = ortho
+            batch_data['images']= ortho #delete the dsm stuff, since rest of code (visualization etc) not made for 4 dimension
             #print("shape of image: ", image.shape)
 
             prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
@@ -259,7 +265,8 @@ class ISTrainer(object):
             last_click_indx = None
 
             with torch.no_grad():
-                num_iters = random.randint(0, self.max_num_next_clicks)
+                num_iters = random.randint(0, self.max_num_next_clicks)  #uinform random nr of clicks from the user
+                #print("user clicks: ", num_iters, "^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^")
 
                 for click_indx in range(num_iters):
                     last_click_indx = click_indx
@@ -271,11 +278,13 @@ class ISTrainer(object):
                         eval_model = self.net
                     else:
                         eval_model = self.click_models[click_indx]
-
+                    #print("first net call, shapes: ", image.shape, prev_output.shape)
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
-                    prev_output = torch.sigmoid(eval_model(net_input, points)['instances'])
 
+                    prev_output = torch.sigmoid(eval_model(net_input[:,[0,1,2,3,4]], points)['instances'])
+                    
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
+                    #print("points shapes: ", points.shape)
 
                     if not validation:
                         self.net.train()
@@ -284,10 +293,13 @@ class ISTrainer(object):
                     zero_mask = np.random.random(size=prev_output.size(0)) < self.prev_mask_drop_prob
                     prev_output[zero_mask] = torch.zeros_like(prev_output[zero_mask])
 
-            batch_data['points'] = points
-            print("net input shape: ", net_input.shape)
 
+            batch_data['points'] = points
+            #print("net input shape after clicks: ", image.shape)
+            #print("out---------------------------------------------------------------------------------")
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
+            #print("net input shape: ", net_input.shape, image.shape, prev_output.shape)
+            #print("net input shapes: ", net_input.shape, image.shape, prev_output.shape)
             output = self.net(net_input, points)
  
             loss = 0.0

@@ -8,7 +8,7 @@ from .ocr import SpatialOCR_Module, SpatialGather_Module
 from .resnetv1b import BasicBlockV1b, BottleneckV1b
 
 relu_inplace = True
-
+1
 
 class HighResolutionModule(nn.Module):
     def __init__(self, num_branches, blocks, num_blocks, num_inchannels,
@@ -166,6 +166,9 @@ class HighResolutionNet(nn.Module):
         self.conv2 = nn.Conv2d(64, 64, kernel_size=3, stride=2, padding=1, bias=False)
         self.bn2 = norm_layer(64)
         self.relu = nn.ReLU(inplace=relu_inplace)
+
+        self.convDSM = nn.Conv2d(1, 64, kernel_size=3, stride=2, padding=1, bias=False)
+        self.bnDSM = norm_layer(64)
 
         num_blocks = 2 if small else 4
 
@@ -325,8 +328,8 @@ class HighResolutionNet(nn.Module):
 
         return nn.Sequential(*modules), num_inchannels
 
-    def forward(self, x, additional_features=None):
-        feats = self.compute_hrnet_feats(x, additional_features)
+    def forward(self, x, dsm=None, additional_features=None):
+        feats = self.compute_hrnet_feats(x, dsm, additional_features)
         if self.ocr_width > 0:
             out_aux = self.aux_head(feats)
             feats = self.conv3x3_ocr(feats)
@@ -338,8 +341,8 @@ class HighResolutionNet(nn.Module):
         else:
             return [self.cls_head(feats), None]
 
-    def compute_hrnet_feats(self, x, additional_features):
-        x = self.compute_pre_stage_features(x, additional_features)
+    def compute_hrnet_feats(self, x, dsm, additional_features):
+        x = self.compute_pre_stage_features(x, dsm, additional_features)
         x = self.layer1(x)
 
         x_list = []
@@ -374,12 +377,19 @@ class HighResolutionNet(nn.Module):
 
         return self.aggregate_hrnet_features(x)
 
-    def compute_pre_stage_features(self, x, additional_features):
+    def compute_pre_stage_features(self, x, dsm, additional_features):
         x = self.conv1(x)
         x = self.bn1(x)
         x = self.relu(x)
-        if additional_features is not None:
+
+        if additional_features is not None :
             x = x + additional_features
+        if dsm is not None:
+            dsm = self.convDSM(dsm)
+            dsm = self.bnDSM(dsm)
+            dsm = self.relu(dsm)
+            x = x + dsm
+
         x = self.conv2(x)
         x = self.bn2(x)
         return self.relu(x)

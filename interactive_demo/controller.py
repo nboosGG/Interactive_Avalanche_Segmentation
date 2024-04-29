@@ -26,12 +26,15 @@ class InteractiveController:
 
         self.image = None
         self.image_name = None #
+        self.dsm = None
+        self.dsm_name = None
         self.vis = None
         self.predictor = None
         self.device = device
         self.update_image_callback = update_image_callback
         self.predictor_params = predictor_params
         self.reset_predictor()
+        print("predictior params: ", predictor_params)
 
     def set_image(self, image, filename):
         self.image = image
@@ -49,7 +52,9 @@ class InteractiveController:
             writer.writerow(my_list)  # Use writerow for single list
             writer.writerow(list2)"""
 
-
+    def set_dsm(self, dsm, filename):
+        self.dsm = dsm
+        self.dsm_name = filename
 
     def set_mask(self, mask):
         if self.image.shape[:2] != mask.shape[:2]:
@@ -74,8 +79,10 @@ class InteractiveController:
 
 
         click = clicker.Click(is_positive=is_positive, coords=(y, x))
+        print("click type: ", type(click))
 
         self.clicker.add_click(click)
+        print("clicker: ", type(self.clicker), type(self._init_mask))
         pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)
         if self._init_mask is not None and len(self.clicker) == 1:
             pred = self.predictor.get_prediction(self.clicker, prev_mask=self._init_mask)

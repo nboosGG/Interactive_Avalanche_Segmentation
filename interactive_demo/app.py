@@ -76,6 +76,8 @@ class InteractiveDemoApp(ttk.Frame):
 
         button = FocusButton(self.menubar, text='Load image', command=self._load_image_callback)
         button.pack(side=tk.LEFT)
+        button = FocusButton(self.menubar, text='Load DSM', command=self._load_dsm_callback)
+        button.pack(side=tk.LEFT)
         self.save_mask_btn = FocusButton(self.menubar, text='Save mask', command=self._save_mask_callback)
         self.save_mask_btn.pack(side=tk.LEFT)
         self.save_mask_btn.configure(state=tk.DISABLED)
@@ -87,6 +89,11 @@ class InteractiveDemoApp(ttk.Frame):
         # Add label to display the image name
         self.image_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
         self.image_name_label.pack(side=tk.LEFT, fill='x', expand=True)
+
+        #Add label to display the dsm name
+        self.dsm_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
+        self.dsm_name_label.pack(side=tk.LEFT, fill='x', expand=True)
+
 
         button = FocusButton(self.menubar, text='About', command=self._about_callback)
         button.pack(side=tk.LEFT)
@@ -210,6 +217,7 @@ class InteractiveDemoApp(ttk.Frame):
 
             if len(filename) > 0:
                 image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
+                print("loaded image, shape: ", np.shape(image))
                 if self.image_on_canvas is not None:
                     if self.image_on_canvas.bbox is not None:
                         self._reset_bbox()
@@ -223,6 +231,30 @@ class InteractiveDemoApp(ttk.Frame):
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S")
         #print(current_time)
+
+    def _load_dsm_callback(self):
+        self.menubar.focus_set()
+        if self._check_entry(self):
+            filename = filedialog.askopenfilename(parent=self.master, filetypes=[
+                ("dsm", "*.jpg *.jpeg *.png *.bmp *.tiff"),
+                ("All files", "*.*"),
+            ], title="Chose a DSM file")
+            self.dsm_name = Path(filename).stem
+            print("dsm name: ", self.dsm_name)
+
+            if len(filename) > 0:
+                #image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
+                dsm = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
+                dsm = np.expand_dims(dsm, 2) #from shape (y,x) to (y,x,1)
+                print("dsm shape expanded: ", np.shape(dsm))
+                self.controller.set_image(dsm, self.dsm_name)
+                #self.save_mask_btn.configure(state=tk.NORMAL)
+                #self.load_mask_btn.configure(state=tk.NORMAL)
+
+                # Update the image name label
+                self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
+
+
 
     def _save_mask_callback(self):
         self.menubar.focus_set()

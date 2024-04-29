@@ -20,7 +20,7 @@ def get_time_metrics(all_ious, elapsed_time):
 
 
 def load_is_model(checkpoint, device, **kwargs):
-    if isinstance(checkpoint, (str, Path)):
+    if isinstance(checkpoint, (str, Path)): #thats the
         state_dict = torch.load(checkpoint, map_location='cpu')
     else:
         state_dict = checkpoint
@@ -30,7 +30,7 @@ def load_is_model(checkpoint, device, **kwargs):
         models = [load_single_is_model(x, device, **kwargs) for x in state_dict]
 
         return model, models
-    else:
+    else: #thats the path
         return load_single_is_model(state_dict, device, **kwargs)
 
 
@@ -97,6 +97,19 @@ def get_dataset(dataset_name, cfg):
         dataset = AvalancheDataset(cfg.AVALANCHE_PATH_17)
     elif dataset_name == 'Small_dataset':
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_18)
+    elif dataset_name == 'DS_v2_1m':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_19)
+    elif dataset_name == 'DS_v2_0p5m':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_20)
+    elif dataset_name == 'DS_v2_0p5m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_21)
+    elif dataset_name == 'DS_v2_0p1m':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_22)
+    elif dataset_name == 'DS_v2_0p1m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_23)
+    elif dataset_name == 'DS_v2_1m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_24)
+    
     else:
         dataset = None
 

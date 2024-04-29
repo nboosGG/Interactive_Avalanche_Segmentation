@@ -22,11 +22,14 @@ class BasePredictor(object):
         self.click_models = None
         self.net_state_dict = None
         self.bbox = bbox
+        self.use_DSM = False
 
         if isinstance(model, tuple):
             self.net, self.click_models = model
         else:
             self.net = model
+        print("use DSM in predictor: ", self.net.use_DSM)
+        self.use_DSM = self.net.use_DSM
             
         self.to_tensor = transforms.ToTensor()
         
@@ -48,8 +51,10 @@ class BasePredictor(object):
         for transform in self.transforms:
             transform.reset()
         self.original_image = image_nd.to(self.device)
-        if len(self.original_image.shape) == 3:
-            self.original_image = self.original_image.unsqueeze(0)
+
+        if len(self.original_image.shape) == 3: #to change shape vom (3,600,600) to (1,3,600,600). is used
+            self.original_image = self.original_image.unsqueeze(0) 
+
         self.prev_prediction = torch.zeros_like(self.original_image[:, :1, :, :])
 
     def get_prediction(self, clicker, prev_mask=None):
@@ -64,6 +69,7 @@ class BasePredictor(object):
         input_image = self.original_image
         if prev_mask is None:
             prev_mask = self.prev_prediction
+        
         if hasattr(self.net, 'with_prev_mask') and self.net.with_prev_mask:
             input_image = torch.cat((input_image, prev_mask), dim=1)
         image_nd, clicks_lists, is_image_changed = self.apply_transforms(
@@ -85,6 +91,8 @@ class BasePredictor(object):
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
+        print("points shape: ", points_nd.shape)
+        print("image shape: ", image_nd.shape)
         return self.net(image_nd, points_nd)['instances']
 
     def _get_transform_states(self):

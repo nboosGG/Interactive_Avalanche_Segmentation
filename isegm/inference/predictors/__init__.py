@@ -21,7 +21,8 @@ def get_predictor(net, brs_mode, device,
     }
     
     predictor_params_ = {
-        'optimize_after_n_clicks': 1
+        'optimize_after_n_clicks': 1,
+        'use_DSM': False
     }
 
     if zoom_in_params is not None:
@@ -39,7 +40,7 @@ def get_predictor(net, brs_mode, device,
     if isinstance(net, (list, tuple)):
         assert brs_mode == 'NoBRS', "Multi-stage models support only NoBRS mode."
 
-    if brs_mode == 'NoBRS':
+    if brs_mode == 'NoBRS': #thats the path, always NoBRS
         if predictor_params is not None:
             predictor_params_.update(predictor_params)
         predictor = BasePredictor(net, device, zoom_in=zoom_in, with_flip=with_flip, bbox=bbox, **predictor_params_)

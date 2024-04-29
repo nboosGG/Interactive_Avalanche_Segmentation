@@ -106,6 +106,8 @@ def parse_args():
 def main():
     args, cfg = parse_args()
 
+    assert(False)
+
     checkpoints_list, logs_path, logs_prefix = get_checkpoints_list_and_logs_path(args, cfg)
     logs_path.mkdir(parents=True, exist_ok=True)
 
@@ -117,6 +119,9 @@ def main():
         dataset = utils.get_dataset(dataset_name, cfg)
 
         for checkpoint_path in checkpoints_list:
+            print("checkpoint path: ", checkpoint_path)
+            print("data name: ", dataset_name)
+            print("shape: ", dataset.dataset_samples[0])
             model = utils.load_is_model(checkpoint_path, args.device)
 
             predictor = get_predictor(model, args.mode, args.device, prob_thresh=args.thresh,
@@ -290,6 +295,7 @@ def get_prediction_vis_callback(logs_path, dataset_name, dataset, prob_thresh):
     save_path.mkdir(parents=True, exist_ok=True)
 
     def callback(image, gt_mask, pred_probs, sample_id, click_indx, clicks_list, not_improving=False):
+        image = image[:,:,:3] #debug
         sample_path = save_path / f'{dataset.dataset_samples[sample_id].replace(".jpg", "").replace(".JPG", "")}_{click_indx + 1}.jpg'
         if not_improving:
             sample_path = f'{str(sample_path).split(".")[0]}_not_improving.jpg'

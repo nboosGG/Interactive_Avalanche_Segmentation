@@ -289,6 +289,8 @@ class CanvasImage:
             return
 
         coords = self._get_click_coordinates(self._last_rb_click_event)
+
+        print("in canvas upon releas mouse button, coords: ", coords, "bounding box:", self.bbox, self._bbox, self.x1, self.y1, self.x2, self.y2)
         
         if self.bbox is None and self._bbox is not None:
             self.canvas.delete("bbox")

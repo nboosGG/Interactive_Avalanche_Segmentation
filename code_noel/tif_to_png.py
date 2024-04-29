@@ -23,29 +23,15 @@ def show_matrix(matrix, verbose: bool, title: str):
 
 def main():
 
-    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/small_dataset/"
-
-    path_storage_dsm = path + "dsm/"
-    path_storage_ortho = path + "ortho/"
-    path_storage_mask = path + "mask/"
+    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/DS_v2_0p5m/"
 
     for folder in os.listdir(path):
         print("name: ", folder)
-        ortho_map = None
-        dsm_map = None
-        src_polys = None
         for filename in os.listdir(path + folder + "/"):
             if filename.endswith(".tif"):
                 mapp = rasterio.open(path + folder + "/" + filename)
                 data = mapp.read()
-
-                #show_matrix(data, 1, "data")
-                #print("image shape: ", np.shape(data))
                 if np.shape(data)[0] == 4:
-                    #show_matrix(data[0,:,:], 1, "channel 0")
-                    #show_matrix(data[1,:,:], 1, "channel 1")
-                    #show_matrix(data[2,:,:], 1, "channel 2")
-                    #show_matrix(data[3,:,:], 1, "channel 3")
                     data[0,:,:] = np.where(data[3,:,:] > 0, data[0,:,:], 0)
                     data[1,:,:] = np.where(data[3,:,:] > 0, data[1,:,:], 0)
                     data[2,:,:] = np.where(data[3,:,:] > 0, data[2,:,:], 0)

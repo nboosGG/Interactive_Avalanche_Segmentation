@@ -49,14 +49,23 @@ def get_bounds_from_shp(shp):
 def extend_bounds(bounds, extend, points_per_meter):
     """extend the bounds in all direction by [extend] with a minimum shape of (600,600)"""
 
-    extended_bounds = np.array([bounds[0] - extend,
-                     bounds[1] - extend, 
-                     bounds[2] + extend, 
-                     bounds[3] + extend])
+    dist_x = bounds[2] - bounds[0]
+    dist_y = bounds[3] - bounds[1]
+
+    bound_x = extend * dist_x / 100
+    bound_y = extend * dist_y / 100
+
+    extended_bounds = np.array([bounds[0] - bound_x,
+                     bounds[1] - bound_y, 
+                     bounds[2] + bound_x, 
+                     bounds[3] + bound_y])
     
     #increase image to at least (600,600)
     x_to_extend = 600 - (extended_bounds[2]-extended_bounds[0]) * points_per_meter
     y_to_extend = 600 - (extended_bounds[3]-extended_bounds[1]) * points_per_meter
+
+    x_to_extend /= points_per_meter
+    y_to_extend /= points_per_meter
     
     #if to_extend uneven, some more code to get exactly 600 in each dimension
     if x_to_extend > 0:
@@ -98,15 +107,13 @@ def create_directiories(folder_list):
 
 
 
-
-
 def main():
     data_path = "/home/boosnoel/Documents/data/DS_v2_sammlung/"
     target_path = "/home/boosnoel/Documents/data/DS_v2_1m/"
 
     path_storage_dsm = target_path + "dsm/"
-    path_storage_ortho = target_path + "ortho/"
-    path_storage_mask = target_path + "mask/"
+    path_storage_ortho = target_path + "images/"
+    path_storage_mask = target_path + "masks/"
 
     create_directiories([path_storage_dsm, path_storage_ortho, path_storage_mask])
 
@@ -115,6 +122,8 @@ def main():
     verbose_show_data = False
 
     datapoints_per_meter = 1
+
+    extend = 5 #in % of the image size that gets padded in each direction
 
     for folder in os.listdir(data_path):
         #print("name: ", folder)
@@ -148,7 +157,7 @@ def main():
             cur_poly = src_polys.shape(iPoly)
             shp_bounds = get_bounds_from_shp(cur_poly)
 
-            extend = 100 #in meters
+            
             bounds_extended = extend_bounds(shp_bounds, extend, datapoints_per_meter)
 
             top_left_coordinate = np.array([bounds_extended[0], bounds_extended[3]])

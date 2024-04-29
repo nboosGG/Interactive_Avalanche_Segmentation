@@ -14,7 +14,8 @@ class DroneAvalancheDataset(ISDataset):
         super(DroneAvalancheDataset, self).__init__(**kwargs)
         assert split in {None, 'train', 'val'}
 
-        dataset_path = "datasets/small_dataset/"
+        #dataset_path = "datasets/DS_v2_0p5m/"
+
         
 
         self.dataset_path = Path(dataset_path)
@@ -61,6 +62,8 @@ class DroneAvalancheDataset(ISDataset):
         #print("asdfsadf", type(dsm))
 
         instances_mask = cv2.imread(mask_path)[:, :, 0].astype(np.int32)
+
+        #print("shapes: ", np.shape(ortho), np.shape(dsm))
 
         assert(np.shape(ortho)[0] == np.shape(dsm)[0] 
                and np.shape(ortho)[1] == np.shape(dsm)[1] 
