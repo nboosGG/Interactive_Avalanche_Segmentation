@@ -24,6 +24,14 @@ AVALANCHE_PATH_15: "./datasets/Avalanche_uibk_train/" # contains the uibk train 
 AVALANCHE_PATH_16: "./datasets/Avalanches_uibk_vali1/" # contains uibk vali images wo glide cracks
 AVALANCHE_PATH_17: "./datasets/U_study_data/" # contains the 20 User study images/masks
 AVALANCHE_PATH_18: "./datasets/small_dataset/" # first small dataset for ortho + dsm
+AVALANCHE_PATH_19: "./datasets/DS_v2_1m/" #dataset v2 with 1m resolution
+AVALANCHE_PATH_20: "./datasets/DS_v2_0p5m/" #dataset v2 with 0.5m resolution
+AVALANCHE_PATH_21: "./datasets/DS_v2_0p5m_test/" #dataset v2 with 0.5m resolution
+AVALANCHE_PATH_22: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
+AVALANCHE_PATH_23: "./datasets/DS_v2_0p1m_test/" #dataset v2 with 0.1m resolution
+AVALANCHE_PATH_24: "./datasets/DS_v2_1m_test/" #dataset v2 with 1m resolution
+
+
 
 
 # Train datasets
@@ -41,6 +49,13 @@ AVALANCHE_TRAIN_uibk_woGcracks: "./datasets/Avalanches_uibk_train1/" # uibk data
 AVALANCHE_VALI_uibk_woGcracks: "./datasets/Avalanches_uibk_vali1/" # uibk data with glide snow cracks sorted out
 AVALANCHE_train_combo: "./datasets/Train_ours_uibk/" #combo of uibk without glide snow cracks and ours
 AVALANCHE_test_combo: "./datasets/Vali_ours_uibk/" #combo of uibk without glide snow cracks and ours
+DS_v2_1m: "./datasets/DS_v2_1m/" #dataset v2 with 1m resolution
+DS_v2_1m_test: "./datasets/DS_v2_1m_test/" #dtest ataset v2 with 1m resolution
+DS_v2_0p5m: "./datasets/DS_v2_0p5m/" #dataset v2 with 0.5m resolution
+DS_v2_0p5m_test: "./datasets/DS_v2_0p5m_test/" #test dataset v2 with 0.5m resolution
+DS_v2_0p1m: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
+DS_v2_0p1m_test: "./datasets/DS_v2_0p1m_test/" #test dataset v2 with 0.1m resolution
+
 
 # You can download the weights for HRNet from the repository:
 # https://github.com/HRNet/HRNet-Image-Classification
