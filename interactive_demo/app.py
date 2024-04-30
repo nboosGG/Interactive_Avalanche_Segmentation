@@ -149,9 +149,10 @@ class InteractiveDemoApp(ttk.Frame):
                         state=tk.NORMAL, command=self._dismiss_bbox)
         self.dismiss_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
-
+        #zooming not used
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
         self.zoomin_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        """
         FocusCheckButton(self.zoomin_options_frame, text='Use ZoomIn', command=self._reset_predictor,
                          variable=self.state['zoomin_params']['use_zoom_in']).grid(row=0, column=0, padx=10)
         FocusCheckButton(self.zoomin_options_frame, text='Fixed crop', command=self._reset_predictor,
@@ -169,13 +170,18 @@ class InteractiveDemoApp(ttk.Frame):
                               min_value=1.0, max_value=2.0, vartype=float,
                               name='zoom_in_expansion_ratio').grid(row=2, column=2, padx=10, pady=1, sticky='w')
         self.zoomin_options_frame.columnconfigure((0, 1, 2), weight=1)
+        """
 
+        #always use noBRS mode
         self.brs_options_frame = FocusLabelFrame(master, text="BRS options")
-        self.brs_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        menu = tk.OptionMenu(self.brs_options_frame, self.state['brs_mode'],
-                             *self.brs_modes, command=self._change_brs_mode)
-        menu.config(width=11)
-        menu.grid(rowspan=2, column=0, padx=10)
+        """
+        #self.brs_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        #menu = tk.OptionMenu(self.brs_options_frame, self.state['brs_mode'],
+        #                     *self.brs_modes, command=self._change_brs_mode)
+        #menu.config(width=11)
+        #menu.grid(rowspan=2, column=0, padx=10)
+        """
+
         self.net_clicks_label = tk.Label(self.brs_options_frame, text="Network clicks")
         self.net_clicks_label.grid(row=0, column=1, pady=2, sticky='e')
         self.net_clicks_entry = BoundedNumericalEntry(self.brs_options_frame,
@@ -224,7 +230,7 @@ class InteractiveDemoApp(ttk.Frame):
                 self.controller.set_image(image, self.image_name)
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
-
+    
                 # Update the image name label
                 self.image_name_label.config(text=f'Image: {self.image_name}')
         #print(filename)

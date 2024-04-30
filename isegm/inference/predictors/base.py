@@ -15,6 +15,7 @@ class BasePredictor(object):
         self.with_flip = with_flip
         self.net_clicks_limit = net_clicks_limit
         self.original_image = None
+        self.original_dsm = None
         self.device = device
         self.zoom_in = zoom_in
         self.prev_prediction = None
@@ -56,6 +57,17 @@ class BasePredictor(object):
             self.original_image = self.original_image.unsqueeze(0) 
 
         self.prev_prediction = torch.zeros_like(self.original_image[:, :1, :, :])
+    
+    def set_input_dsm(self, dsm):
+        dsm_nd = self.to_tensor(dsm)
+        print("dsm shape: ", dsm.shape)
+        for transform in self.transforms:
+            transform.reset()
+        self.original_dsm = dsm_nd.to(self.device)
+
+        if len(self.original_dsm.shape) == 3: #to change shape vom (3,600,600) to (1,3,600,600). is used
+            self.original_dsm = self.original_dsm.unsqueeze(0) 
+
 
     def get_prediction(self, clicker, prev_mask=None):
         clicks_list = clicker.get_clicks()
@@ -67,11 +79,16 @@ class BasePredictor(object):
                 self.net = self.click_models[model_indx]
 
         input_image = self.original_image
+        dsm = torch.zeros_like(self.prev_prediction) #initiate empty dsm, to be filled if used
         if prev_mask is None:
             prev_mask = self.prev_prediction
+        if self.use_DSM and self.original_dsm is not None:
+            #use the actual dsm data
+            dsm = self.original_dsm
+                
         
         if hasattr(self.net, 'with_prev_mask') and self.net.with_prev_mask:
-            input_image = torch.cat((input_image, prev_mask), dim=1)
+            input_image = torch.cat((input_image, dsm, prev_mask), dim=1)
         image_nd, clicks_lists, is_image_changed = self.apply_transforms(
             input_image, [clicks_list]
         )

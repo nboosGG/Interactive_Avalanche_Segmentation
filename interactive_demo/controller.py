@@ -169,6 +169,7 @@ class InteractiveController:
             writer.writerow(my_list)  # Use writerow for single list
 
     def reset_last_object(self, update_image=True):
+        print("reset_last_object callt")
         self.states = []
         self.probs_history = []
         self.clicker.reset_clicks()
@@ -178,12 +179,15 @@ class InteractiveController:
             self.update_image_callback()
 
     def reset_predictor(self, predictor_params=None):
+        print("reset_predictior called")
         if predictor_params is not None:
             self.predictor_params = predictor_params
         self.predictor = get_predictor(self.net, device=self.device,
                                        **self.predictor_params)
         if self.image is not None:
             self.predictor.set_input_image(self.image)
+        if self.dsm is not None:
+            self.predictor.set_input_dsm(self.dsm)
 
     def reset_init_mask(self):
         self._init_mask = None
