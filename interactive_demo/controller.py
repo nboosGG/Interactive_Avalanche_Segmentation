@@ -38,6 +38,7 @@ class InteractiveController:
 
     def set_image(self, image, filename):
         self.image = image
+        print("controller.py: set image called, shape: ", np.shape(image))
         self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
         self.object_count = 0
         self.reset_last_object(update_image=False)
@@ -53,8 +54,10 @@ class InteractiveController:
             writer.writerow(list2)"""
 
     def set_dsm(self, dsm, filename):
+        print("controller.py: set_dsm called, shape:", np.shape(dsm))
         self.dsm = dsm
         self.dsm_name = filename
+        self.reset_last_object(update_image=False) #needed to update dsm somewhere
 
     def set_mask(self, mask):
         if self.image.shape[:2] != mask.shape[:2]:

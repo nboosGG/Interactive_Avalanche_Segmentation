@@ -8,21 +8,18 @@ class BasePredictor(object):
     def __init__(self, model, device,
                  net_clicks_limit=None,
                  with_flip=False,
-                 zoom_in=None,
                  max_size=None,
-                 bbox = None,
                  **kwargs):
         self.with_flip = with_flip
         self.net_clicks_limit = net_clicks_limit
         self.original_image = None
         self.original_dsm = None
         self.device = device
-        self.zoom_in = zoom_in
+        self.zoom_in = None
         self.prev_prediction = None
         self.model_indx = 0
         self.click_models = None
         self.net_state_dict = None
-        self.bbox = bbox
         self.use_DSM = False
 
         if isinstance(model, tuple):
@@ -33,22 +30,17 @@ class BasePredictor(object):
         self.use_DSM = self.net.use_DSM
             
         self.to_tensor = transforms.ToTensor()
-        
-        if bbox is not None:
-            self.transforms = [CropBBox(bbox)]
-            if max_size is not None:
-                self.transforms.append(LimitLongestSide(max_size=max_size))
+        self.transforms = []
+        if max_size is not None:
+            self.transforms.append(LimitLongestSide(max_size=max_size))
             self.zoom_in = None
-        else:
-            self.transforms = [zoom_in] if zoom_in is not None else []
-            if max_size is not None:
-                self.transforms.append(LimitLongestSide(max_size=max_size))
         self.transforms.append(SigmoidForPred())
         if with_flip:
             self.transforms.append(AddHorizontalFlip())
 
     def set_input_image(self, image):
         image_nd = self.to_tensor(image)
+        print("base.py: image shape: ", image_nd.shape)
         for transform in self.transforms:
             transform.reset()
         self.original_image = image_nd.to(self.device)
@@ -60,12 +52,12 @@ class BasePredictor(object):
     
     def set_input_dsm(self, dsm):
         dsm_nd = self.to_tensor(dsm)
-        print("dsm shape: ", dsm.shape)
+        print("base.py: dsm shape: ", dsm_nd.shape)
         for transform in self.transforms:
             transform.reset()
         self.original_dsm = dsm_nd.to(self.device)
 
-        if len(self.original_dsm.shape) == 3: #to change shape vom (3,600,600) to (1,3,600,600). is used
+        if len(self.original_dsm.shape) == 3: #to change shape vom (1,600,600) to (1,1,600,600). is used
             self.original_dsm = self.original_dsm.unsqueeze(0) 
 
 

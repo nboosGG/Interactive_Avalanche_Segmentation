@@ -12,9 +12,18 @@ from interactive_demo.wrappers import BoundedNumericalEntry, FocusHorizontalScal
     FocusButton, FocusLabelFrame
 from datetime import datetime
 
-
+import rasterio
+import rasterio.mask
+import rasterio.windows
 
 class InteractiveDemoApp(ttk.Frame):
+
+    initial_image_name = None
+    initial_dsm_name = None
+    loaded_tif = False
+    loaded_dsm = False
+    current_bounds = None
+
     def __init__(self, master, args, model):
         super().__init__(master)
         self.master = master
@@ -25,6 +34,11 @@ class InteractiveDemoApp(ttk.Frame):
         y = (master.winfo_screenheight() - master.winfo_reqheight()) / 2
         master.geometry("+%d+%d" % (x, y))
         self.pack(fill="both", expand=True)
+
+        self.loaded_tif = False
+        self.loaded_dsm = False
+        self.map_ortho = None
+        self.map_dsm = None
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
@@ -141,13 +155,25 @@ class InteractiveDemoApp(ttk.Frame):
         self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._reset_bbox)
+                        state=tk.NORMAL, command=self._reset_bbox)
         self.reset_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         #dismiss bbox button
         self.dismiss_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Dismiss Box', bg='#ffc966', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._dismiss_bbox)
         self.dismiss_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+        #shapefile buttons
+        self.shapefile_options_frame = FocusLabelFrame(master, text="Shapefile management")
+        self.shapefile_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        self.safe_mask_button = \
+            FocusButton(self.shapefile_options_frame, text='Safe current mask', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.DISABLED, command=self._safe_mask)
+        self.safe_mask_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        self.display_all_masks_button = \
+            FocusButton(self.shapefile_options_frame, text='Display all masks', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.DISABLED, command=self._display_all_masks)
+        self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         #zooming not used
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
@@ -212,60 +238,92 @@ class InteractiveDemoApp(ttk.Frame):
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER)
 
+    def _load_image(self, filename):
+        map = rasterio.open(filename)
+        image = map.read()
+        image = image[:3,:,:]
+        image = np.rollaxis(image, 0,3) #from [3,ydim,xdim] to [ydim,xdim,3]
+        
+        self.controller.set_image(image, self.image_name)
+        print("ortho shape: ", np.shape(image))
+        self.map_ortho = map
+        self.current_bounds = np.array(map.bounds)
+
+        return image
+    
+    
     def _load_image_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
             filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff"),
+                ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif"),
                 ("All files", "*.*"),
             ], title="Chose an image")
             self.image_name = Path(filename).stem
 
             if len(filename) > 0:
-                image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
-                print("loaded image, shape: ", np.shape(image))
+
+                if filename[-4:] == ".tif":
+                    image = self._load_image(filename)
+                    self.loaded_tif = True
+                    self.initial_image_name = filename
+                else:
+
+                    image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
+                    print("loaded image, shape: ", np.shape(image))
+                    self.controller.set_image(image, self.image_name)
+
                 if self.image_on_canvas is not None:
                     if self.image_on_canvas.bbox is not None:
                         self._reset_bbox()
-                self.controller.set_image(image, self.image_name)
+                
                 self.save_mask_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
     
                 # Update the image name label
                 self.image_name_label.config(text=f'Image: {self.image_name}')
-        #print(filename)
-        now = datetime.now()
-        current_time = now.strftime("%H:%M:%S")
-        #print(current_time)
+
+    def _load_dsm(self, filename):
+        print("load_dsm called")
+        map_dsm = rasterio.open(filename)
+        dsm = map_dsm.read(1,)
+
+        dsm = np.expand_dims(dsm, 2) #from shape (y,x) to (y,x,1)
+        print("dsm shape: ", np.shape(dsm))
+        self.controller.set_dsm(dsm, self.dsm_name)
+        #self.save_mask_btn.configure(state=tk.NORMAL)
+        #self.load_mask_btn.configure(state=tk.NORMAL)
+
+        self.map_dsm = map_dsm
 
     def _load_dsm_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
             filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("dsm", "*.jpg *.jpeg *.png *.bmp *.tiff"),
+                ("dsm", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif"),
                 ("All files", "*.*"),
-            ], title="Chose a DSM file")
+            ], _load_image_callbacktitle="Chose a DSM file")
             self.dsm_name = Path(filename).stem
             print("dsm name: ", self.dsm_name)
 
             if len(filename) > 0:
                 #image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
-                dsm = cv2.imread(filename, cv2.IMREAD_GRAYSCALE)
-                dsm = np.expand_dims(dsm, 2) #from shape (y,x) to (y,x,1)
-                print("dsm shape expanded: ", np.shape(dsm))
-                self.controller.set_image(dsm, self.dsm_name)
-                #self.save_mask_btn.configure(state=tk.NORMAL)
-                #self.load_mask_btn.configure(state=tk.NORMAL)
-
-                # Update the image name label
+                #dsm = cv2.imread(filename, cv2.IMREAD_GRAYSCALE) #maybe for real dsm this needs to be used
+                print("entered _load_dsm call")
+                self._load_dsm(filename)
+                self.loaded_dsm = True
+                self.initial_dsm_name = filename
                 self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
-
 
 
     def _save_mask_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
             mask = self.controller.result_mask
+            print("return mask shape: ", np.shape(mask))
+
+            
+            
             if mask is None:
                 return
 
@@ -387,8 +445,8 @@ class InteractiveDemoApp(ttk.Frame):
     def _click_callback(self, is_positive, x, y):
         self.canvas.focus_set()
 
-        if self.image_on_canvas.bbox is not None and self.bbox is None:
-            messagebox.showwarning("Warning", "Confirm or reset the bounding box before selecting any points.")
+        if self.image_on_canvas.bbox is not None:
+            messagebox.showwarning("Warning", "Confirm or reset the drawn bounding box before selecting any points.")
             return
 
         if self.bbox is not None:
@@ -415,38 +473,94 @@ class InteractiveDemoApp(ttk.Frame):
         self._set_click_dependent_widgets_state()
         if image is not None:
             self.image_on_canvas.reload_image(Image.fromarray(image), reset_canvas)
+
+    @staticmethod
+    def _calculate_resolution(bounds):
+        return int(bounds[3]-bounds[1]), int(bounds[2]-bounds[0])
             
     def _confirm_bbox(self):
+        print("----------------------------------")
+        print("flags: ", self.loaded_tif, self.loaded_dsm)
+        
         if self.image_on_canvas.bbox_x1 > self.image_on_canvas.bbox_x2:
             self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2 = self.image_on_canvas.bbox_x2, self.image_on_canvas.bbox_x1
         if self.image_on_canvas.bbox_y1 > self.image_on_canvas.bbox_y2:
             self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2 = self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_y1
 
-        self.bbox = self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2
+        #bbox = [y1,y2,x1,x2], different than a real bounding box!!!
+        bbox = [self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2]
 
+        print("bbox: ", bbox)
 
-        self._reset_last_object()
+        initial_image_pixel_height = bbox[1]-bbox[0] + 1
+        initial_image_pixel_width = bbox[3]-bbox[2] + 1
+
+        #calculate windows and its bound coordinates
+        window_ortho = rasterio.windows.Window(bbox[2],bbox[0], initial_image_pixel_width, initial_image_pixel_height)
+        bounds_ch_coordinates = rasterio.windows.bounds(window_ortho,self.map_ortho.transform)
+
+        #calculate resolution
+        height, width = self._calculate_resolution(bounds_ch_coordinates)
+        print("resolution:", height, width)
+        assert(height > 0 and width > 0 and "resolution calculation failed")
+
+        #load image
+        image = self.map_ortho.read(window=window_ortho)
+        image = image[:3,:,:] #remove 4th channel if it exists
+        image = np.rollaxis(image, 0,3)
+
+        if self.loaded_dsm:
+            window_dsm = rasterio.windows.from_bounds(*bounds_ch_coordinates, self.map_dsm.transform)
+            dsm = self.map_dsm.read(1, window=window_dsm)
+            dsm = np.expand_dims(dsm, 2)
+            print("!!!!!!!!!!!!!!!¨")
+            print("shape of image and dsm: ", np.shape(image), np.shape(dsm))
+
+        #hand ortho and dsm to controller
+        self.controller.set_image(image, self.image_name)
+        self.current_bounds = bounds_ch_coordinates
+        if self.loaded_dsm:
+            self.controller.set_dsm(dsm, self.dsm_name)
+        self.save_mask_btn.configure(state=tk.NORMAL)
+        self.load_mask_btn.configure(state=tk.NORMAL)
+        self.reset_bbx_button.configure(state=tk.NORMAL)
+
+        #remove the drawn bbox
+        self._dismiss_bbox()
+
+        self._reset_last_object() #to delet previous clicks and stuff
         self._reset_predictor()
 
     def _dismiss_bbox(self):
-        self._reset_bbox(reset_last_object=False)
-        self.controller.dismiss_bbox()
-        self._reset_predictor()
-
-    def _reset_bbox(self, reset_last_object = True):
-        if self.image_on_canvas.bbox is None:
-            return
-               
-        if self.bbox is not None:
-            self.bbox = None
-        
+        self.bbox = None
         self.canvas.delete("bbox")
         self.image_on_canvas.bbox = None
         self.image_on_canvas._bbox = None
         
+
+    def _reset_bbox(self, reset_last_object = True):               
+        self.bbox = None
+        
+        self.canvas.delete("bbox")
+        self.image_on_canvas.bbox = None
+        self.image_on_canvas._bbox = None
+
+        if self.loaded_tif:
+            self._load_image(self.initial_image_name)
+        if self.loaded_dsm:
+            self._load_dsm(self.initial_dsm_name)
+        
         if reset_last_object:
             self._reset_last_object()
         self._reset_predictor()
+
+
+    #everything to create the shapefile
+    def _safe_mask(self):
+        a=5
+    
+    def _display_all_masks(self):
+        a=5
         
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = tk.NORMAL if self.controller.is_incomplete_mask else tk.DISABLED
@@ -459,13 +573,11 @@ class InteractiveDemoApp(ttk.Frame):
         self.brs_options_frame.set_frame_state(before_1st_click_state)
                 
         if self.image_on_canvas.bbox == None:
-            self.reset_bbx_button.configure(state=tk.DISABLED)
             self.confirm_bbx_button.configure(state=tk.DISABLED)
         else:
             self.state['zoomin_params']['use_zoom_in'].set(False)
             self.state['zoomin_params']['fixed_crop'].set(False)
             self.state['brs_mode'].set('NoBRS')
-            self._change_brs_mode()
             
             self.reset_bbx_button.configure(state=tk.NORMAL)
             self.zoomin_options_frame.set_frame_state(state=tk.DISABLED)
