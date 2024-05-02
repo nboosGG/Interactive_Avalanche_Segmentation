@@ -16,6 +16,16 @@ import rasterio
 import rasterio.mask
 import rasterio.windows
 
+import shapefile
+
+import matplotlib.pyplot as plt
+
+
+def show_matrix(arr, title: str):
+    plt.imshow(arr, cmap='hot')
+    plt.title(title)
+    plt.show()
+
 class InteractiveDemoApp(ttk.Frame):
 
     initial_image_name = None
@@ -319,26 +329,61 @@ class InteractiveDemoApp(ttk.Frame):
     def _save_mask_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
-            mask = self.controller.result_mask
-            print("return mask shape: ", np.shape(mask))
+            
+            
+            mask = (self.controller.result_mask * 255).astype(np.uint8)
 
-            
-            
             if mask is None:
                 return
+            
+            #mask = np.expand_dims(mask,0)
+            #imgray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
+            print("returned mask shape: ", np.shape(mask), np.amax(mask), np.amin(mask))
+
+            show_matrix(mask, "returned mask")
+
+            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+
+            print("#objects: ", len(contours))
+            
+            
 
             filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
                 ("PNG image", "*.png"),
                 ("BMP image", "*.bmp"),
                 ("All files", "*.*"),
             ], title="Save the current mask as...")
-            print(filename)
+            print("output filename: ", filename)
 
-            if len(filename) > 0:
+            #Create a new shapefile with lines as the geometry type
+            w = shapefile.Writer(filename, shapeType=shapefile.POLYLINE)
+            w.field('ID', 'N')
+
+            for i, cnt in enumerate(contours):
+                w.line(cnt.tolist())
+                w.record(i)
+                print("i:", i)
+
+            #also create a coordinate system file:
+            # create the PRJ file
+            prj = open("%s.prj" % filename, "w")
+            epsg = 'GEOGCS["WGS 84",'
+            epsg += 'DATUM["WGS_1984",'
+            epsg += 'SPHEROID["WGS 84",6378137,298.257223563]]'
+            epsg += ',PRIMEM["Greenwich",0],'
+            epsg += 'UNIT["degree",0.0174532925199433]]'
+            prj.write(epsg)
+            prj.close()
+
+            
+
+            """if len(filename) > 0:
                 if mask.max() < 256:
                     mask = mask.astype(np.uint8)
                     mask *= 255 // mask.max()
-                cv2.imwrite(filename, mask)
+                cv2.imwrite(filename, mask)"""
+            
+
 
     def _load_mask_callback(self):
         if not self.controller.net.with_prev_mask:
