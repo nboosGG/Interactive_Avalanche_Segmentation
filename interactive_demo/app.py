@@ -16,7 +16,12 @@ import rasterio
 import rasterio.mask
 import rasterio.windows
 
+import pandas as pd
+import geopandas as gpd
+
 import shapefile
+
+from shapely import geometry
 
 import matplotlib.pyplot as plt
 
@@ -33,6 +38,8 @@ class InteractiveDemoApp(ttk.Frame):
     loaded_tif = False
     loaded_dsm = False
     current_bounds = None
+    polygonlist = None
+    resolution = 1
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -49,6 +56,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.loaded_dsm = False
         self.map_ortho = None
         self.map_dsm = None
+        self.resolution = 1
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
@@ -102,7 +110,7 @@ class InteractiveDemoApp(ttk.Frame):
         button.pack(side=tk.LEFT)
         button = FocusButton(self.menubar, text='Load DSM', command=self._load_dsm_callback)
         button.pack(side=tk.LEFT)
-        self.save_mask_btn = FocusButton(self.menubar, text='Save mask', command=self._save_mask_callback)
+        self.save_mask_btn = FocusButton(self.menubar, text='Save SHP', command=self._save_polygon_callback)
         self.save_mask_btn.pack(side=tk.LEFT)
         self.save_mask_btn.configure(state=tk.DISABLED)
 
@@ -177,13 +185,17 @@ class InteractiveDemoApp(ttk.Frame):
         self.shapefile_options_frame = FocusLabelFrame(master, text="Shapefile management")
         self.shapefile_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.safe_mask_button = \
-            FocusButton(self.shapefile_options_frame, text='Safe current mask', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._safe_mask)
+            FocusButton(self.shapefile_options_frame, text='Safe current polygon', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._store_polygon)
         self.safe_mask_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.display_all_masks_button = \
-            FocusButton(self.shapefile_options_frame, text='Display all masks', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.shapefile_options_frame, text='Display all polygons', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._display_all_masks)
         self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        self.reset_polygonlist = \
+            FocusButton(self.shapefile_options_frame, text='Delete Polygonlist', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.DISABLED, command=self._reset_polygonlist)
+        self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         #zooming not used
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
@@ -233,6 +245,11 @@ class InteractiveDemoApp(ttk.Frame):
         self.lbfgs_iters_entry.grid(row=1, column=2, padx=10, pady=2, sticky='w')
         self.brs_options_frame.columnconfigure((0, 1), weight=1)
 
+        self.image_resolution_frame = FocusLabelFrame(master, text="Image Resolution")
+        self.image_resolution_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        FocusHorizontalScale(self.image_resolution_frame, from_=0.1, to=5.0, command=self._update_resolution,
+                             variable=self.resolution).pack(padx=10)
+
         self.prob_thresh_frame = FocusLabelFrame(master, text="Predictions threshold")
         self.prob_thresh_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         FocusHorizontalScale(self.prob_thresh_frame, from_=0.0, to=1.0, command=self._update_prob_thresh,
@@ -247,10 +264,44 @@ class InteractiveDemoApp(ttk.Frame):
         self.click_radius_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER)
+        
+    def _calc_load_resolution(self, map):
+        bounds = np.array(map.bounds)
+        x_dist = bounds[2] - bounds[0]
+        y_dist = bounds[3] - bounds[1]
+
+        print("map bounds + dist: ", bounds, x_dist, y_dist)
+
+        max_pixel = 1200
+        biggest_dist = np.maximum(x_dist, y_dist)
+        
+        affine_trans = map.affine
+        initial_resolution_x = affine_trans[0]
+        initial_resolution_y = affine_trans[4]
+
+        initial_x_pixel = x_dist * initial_resolution_x
+        initial_y_pixel = y_dist * initial_resolution_y
+
+        max_initial_pixel = 5
+
+
+    def _calc_image_load_outshape(self, map):
+        print("resolution: ", self.resolution)
+        bounds = np.array(map.bounds)
+        x_dist = bounds[2] - bounds[0]
+        y_dist = bounds[3] - bounds[1]
+
+        pixel_x_direc = float(x_dist) // self.resolution
+        pixel_y_direc = float(y_dist) // self.resolution
+
+        return tuple(np.array([pixel_y_direc, pixel_x_direc]).astype(int))
+
+
 
     def _load_image(self, filename):
         map = rasterio.open(filename)
-        image = map.read()
+        out_shape = self._calc_image_load_outshape(map)
+        image = map.read(out_shape=(map.count, out_shape[0], out_shape[1]))
         image = image[:3,:,:]
         image = np.rollaxis(image, 0,3) #from [3,ydim,xdim] to [ydim,xdim,3]
         
@@ -292,6 +343,7 @@ class InteractiveDemoApp(ttk.Frame):
     
                 # Update the image name label
                 self.image_name_label.config(text=f'Image: {self.image_name}')
+                self.polygonlist = []
 
     def _load_dsm(self, filename):
         print("load_dsm called")
@@ -325,64 +377,78 @@ class InteractiveDemoApp(ttk.Frame):
                 self.initial_dsm_name = filename
                 self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
 
+    def contour_to_polygon(self, contour):
 
-    def _save_mask_callback(self):
+
+        affine_trans = self.map_ortho.transform
+        x_resolution = affine_trans[0]
+        y_resolution = affine_trans[4]
+
+
+        top_left_x = self.current_bounds[0]
+        top_left_y = self.current_bounds[3]
+
+        
+
+        ll = []
+        for i, cnt in enumerate(contour):
+                for p in cnt.tolist():
+                    pp = p[0]
+                    pp[0] = pp[0] * x_resolution + top_left_x
+                    pp[1] = pp[1]* y_resolution + top_left_y
+                    ll.append(pp)
+        
+        polygonomy = geometry.Polygon(ll)
+
+        return polygonomy
+
+    def _store_polygon(self):
+
+        mask = (self.controller.result_mask * 255).astype(np.uint8)
+
+        if mask is None:
+            return
+        
+        contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+
+        polygon = self.contour_to_polygon(contours)
+        self.polygonlist.append(polygon)
+
+        #delet clicks since they are stored
+        self._reset_last_object()
+
+
+    def _save_polygon_callback(self):
         self.menubar.focus_set()
-        if self._check_entry(self):
-            
-            
-            mask = (self.controller.result_mask * 255).astype(np.uint8)
 
-            if mask is None:
-                return
-            
-            #mask = np.expand_dims(mask,0)
-            #imgray = cv2.cvtColor(mask, cv2.COLOR_BGR2GRAY)
-            print("returned mask shape: ", np.shape(mask), np.amax(mask), np.amin(mask))
+        if len(self.polygonlist) == 0:
+            return
 
-            show_matrix(mask, "returned mask")
 
-            contours, _ = cv2.findContours(mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        cur_polygonlist = []
+        counter = 0
+        for poly in self.polygonlist:
 
-            print("#objects: ", len(contours))
-            
-            
+            cur_polygonlist.append([counter,poly])
+            counter += 1
 
-            filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
-                ("PNG image", "*.png"),
-                ("BMP image", "*.bmp"),
-                ("All files", "*.*"),
-            ], title="Save the current mask as...")
-            print("output filename: ", filename)
+        print("#polygons found: ", counter)
+        
+        gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
+        #gdf = gdf.set_geometry('geometry', )
 
-            #Create a new shapefile with lines as the geometry type
-            w = shapefile.Writer(filename, shapeType=shapefile.POLYLINE)
-            w.field('ID', 'N')
+        
+        
 
-            for i, cnt in enumerate(contours):
-                w.line(cnt.tolist())
-                w.record(i)
-                print("i:", i)
+        filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
+            ("PNG image", "*.png"),
+            ("BMP image", "*.bmp"),
+            ("All files", "*.*"),
+        ], title="Save the current mask as...")
+        print("output filename: ", filename)
 
-            #also create a coordinate system file:
-            # create the PRJ file
-            prj = open("%s.prj" % filename, "w")
-            epsg = 'GEOGCS["WGS 84",'
-            epsg += 'DATUM["WGS_1984",'
-            epsg += 'SPHEROID["WGS 84",6378137,298.257223563]]'
-            epsg += ',PRIMEM["Greenwich",0],'
-            epsg += 'UNIT["degree",0.0174532925199433]]'
-            prj.write(epsg)
-            prj.close()
+        gdf.to_file(filename)
 
-            
-
-            """if len(filename) > 0:
-                if mask.max() < 256:
-                    mask = mask.astype(np.uint8)
-                    mask *= 255 // mask.max()
-                cv2.imwrite(filename, mask)"""
-            
 
 
     def _load_mask_callback(self):
@@ -422,6 +488,9 @@ class InteractiveDemoApp(ttk.Frame):
         self.state['alpha_blend'].set(0.5)
         self.state['prob_thresh'].set(0.5)
         self.controller.reset_last_object()
+
+    def _update_resolution(self, value):
+        self.resolution = float(value)
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:
@@ -563,7 +632,7 @@ class InteractiveDemoApp(ttk.Frame):
 
         #hand ortho and dsm to controller
         self.controller.set_image(image, self.image_name)
-        self.current_bounds = bounds_ch_coordinates
+        self.current_bounds = np.array(bounds_ch_coordinates)
         if self.loaded_dsm:
             self.controller.set_dsm(dsm, self.dsm_name)
         self.save_mask_btn.configure(state=tk.NORMAL)
@@ -600,12 +669,12 @@ class InteractiveDemoApp(ttk.Frame):
         self._reset_predictor()
 
 
-    #everything to create the shapefile
-    def _safe_mask(self):
-        a=5
-    
+    #everything to create the shapefile    
     def _display_all_masks(self):
         a=5
+
+    def _reset_polygonlist(self):
+        self.polygonlist = []
         
     def _set_click_dependent_widgets_state(self):
         after_1st_click_state = tk.NORMAL if self.controller.is_incomplete_mask else tk.DISABLED
