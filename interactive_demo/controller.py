@@ -44,14 +44,6 @@ class InteractiveController:
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
         self.image_name = filename
-        """
-        # added aval-e for saving data for User study
-        my_list = [self.image_name,] #write name of image to file
-        list2 = ["time_of_click", "click_count", "type_click", "x", "y", "IoU"]
-        with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a', newline='') as file: # Opening a CSV file in append mode
-            writer = csv.writer(file) # Using csv.writer to write the list to the CSV file
-            writer.writerow(my_list)  # Use writerow for single list
-            writer.writerow(list2)"""
 
     def set_dsm(self, dsm, filename):
         print("controller.py: set_dsm called, shape:", np.shape(dsm))
