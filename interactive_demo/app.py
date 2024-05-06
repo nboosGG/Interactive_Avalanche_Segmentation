@@ -33,13 +33,14 @@ def show_matrix(arr, title: str):
 
 class InteractiveDemoApp(ttk.Frame):
 
-    initial_image_name = None
-    initial_dsm_name = None
+    image_name = None
+    dsm_name = None
     loaded_tif = False
     loaded_dsm = False
     current_bounds = None
+    current_resolution = None
     polygonlist = None
-    resolution = 1
+    image_transform = None
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -56,7 +57,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.loaded_dsm = False
         self.map_ortho = None
         self.map_dsm = None
-        self.resolution = 1
+        self.image_resolution = tk.DoubleVar(value=1)
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
@@ -153,15 +154,15 @@ class InteractiveDemoApp(ttk.Frame):
         self.clicks_options_frame = FocusLabelFrame(master, text="Clicks management")
         self.clicks_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.finish_object_button = \
-            FocusButton(self.clicks_options_frame, text='Finish\nobject', bg='#b6d7a8', fg='black', width=10, height=2,
+            FocusButton(self.clicks_options_frame, text='Finish\nobject', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._finish_object)
         self.finish_object_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.undo_click_button = \
-            FocusButton(self.clicks_options_frame, text='Undo click', bg='#ffe599', fg='black', width=10, height=2,
+            FocusButton(self.clicks_options_frame, text='Undo click', bg='#ffe599', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self.controller.undo_click)
         self.undo_click_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_clicks_button = \
-            FocusButton(self.clicks_options_frame, text='Reset clicks', bg='#ea9999', fg='black', width=10, height=2,
+            FocusButton(self.clicks_options_frame, text='Reset clicks', bg='#ea9999', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._reset_last_object)
         self.reset_clicks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         
@@ -169,7 +170,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.bbx_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.confirm_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Confirm Bounding Box', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._confirm_bbox)
+                        state=tk.DISABLED, command=self._confirm_bbox2)
         self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
@@ -245,72 +246,89 @@ class InteractiveDemoApp(ttk.Frame):
         self.lbfgs_iters_entry.grid(row=1, column=2, padx=10, pady=2, sticky='w')
         self.brs_options_frame.columnconfigure((0, 1), weight=1)
 
-        self.image_resolution_frame = FocusLabelFrame(master, text="Image Resolution")
+        self.image_resolution_frame = FocusLabelFrame(master, text="Image Resolution (pixel size in meters [m])")
         self.image_resolution_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        FocusHorizontalScale(self.image_resolution_frame, from_=0.1, to=5.0, command=self._update_resolution,
-                             variable=self.resolution).pack(padx=10)
+        FocusHorizontalScale(self.image_resolution_frame, from_=0.1, to=5.0, resolution=0.1, command=self._update_image_resolution,
+                             variable=self.image_resolution, sliderlength=30).pack(padx=10, side=tk.LEFT)
+        self.reload_image_button = \
+            FocusButton(self.image_resolution_frame, text='Reload Image', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._reload_image)
+        self.reload_image_button.pack(side=tk.RIGHT, fill=tk.X, padx=10, pady=3)
 
         self.prob_thresh_frame = FocusLabelFrame(master, text="Predictions threshold")
         self.prob_thresh_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        FocusHorizontalScale(self.prob_thresh_frame, from_=0.0, to=1.0, command=self._update_prob_thresh,
-                             variable=self.state['prob_thresh']).pack(padx=10)
+        FocusHorizontalScale(self.prob_thresh_frame, from_=0.0, to=1.0, resolution=0.1, command=self._update_prob_thresh,
+                             variable=self.state['prob_thresh']).pack(padx=10, side=tk.LEFT)
 
         self.alpha_blend_frame = FocusLabelFrame(master, text="Alpha blending coefficient")
         self.alpha_blend_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        FocusHorizontalScale(self.alpha_blend_frame, from_=0.0, to=1.0, command=self._update_blend_alpha,
-                             variable=self.state['alpha_blend']).pack(padx=10, anchor=tk.CENTER)
+        FocusHorizontalScale(self.alpha_blend_frame, from_=0.0, to=1.0, resolution=0.1, command=self._update_blend_alpha,
+                             variable=self.state['alpha_blend']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
 
         self.click_radius_frame = FocusLabelFrame(master, text="Visualisation click radius")
         self.click_radius_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
-                             variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER)
+                             variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
-    def _calc_load_resolution(self, map):
-        bounds = np.array(map.bounds)
-        x_dist = bounds[2] - bounds[0]
-        y_dist = bounds[3] - bounds[1]
 
-        print("map bounds + dist: ", bounds, x_dist, y_dist)
+    def _calculate_resolution2(self, bounds):
+        x_dist = bounds[2]-bounds[0]
+        y_dist = bounds[3]-bounds[1]
 
-        max_pixel = 1200
-        biggest_dist = np.maximum(x_dist, y_dist)
-        
-        affine_trans = map.affine
-        initial_resolution_x = affine_trans[0]
-        initial_resolution_y = affine_trans[4]
+        x_npixel = x_dist / self.image_resolution.get()
+        y_npixel = y_dist / self.image_resolution.get()
 
-        initial_x_pixel = x_dist * initial_resolution_x
-        initial_y_pixel = y_dist * initial_resolution_y
+        max_npixel = np.maximum(x_npixel, y_npixel)
 
-        max_initial_pixel = 5
+        divider = 1
+        if max_npixel > 2000:
+            divider = 2000. / max_npixel
+
+        x_npixel = x_npixel / divider
+        y_npixel = y_npixel / divider
+
+        return np.array([y_npixel, x_npixel]).astype(int)
 
 
     def _calc_image_load_outshape(self, map):
-        print("resolution: ", self.resolution)
+        print("resolution: ", self.image_resolution.get())
         bounds = np.array(map.bounds)
         x_dist = bounds[2] - bounds[0]
         y_dist = bounds[3] - bounds[1]
 
-        pixel_x_direc = float(x_dist) // self.resolution
-        pixel_y_direc = float(y_dist) // self.resolution
+        pixel_x_direc = float(x_dist) // self.image_resolution.get()
+        pixel_y_direc = float(y_dist) // self.image_resolution.get()
 
         return tuple(np.array([pixel_y_direc, pixel_x_direc]).astype(int))
 
-
-
-    def _load_image(self, filename):
+    def _load_image(self, filename, bounds=None, use_current_bounds=False):
+        print("load image2 called")
         map = rasterio.open(filename)
-        out_shape = self._calc_image_load_outshape(map)
-        image = map.read(out_shape=(map.count, out_shape[0], out_shape[1]))
+        if bounds is None:
+            if use_current_bounds:
+                bounds = self.current_bounds
+            else:
+                bounds = map.bounds
+        assert(bounds is not None)
+
+        out_shape = self._calculate_resolution2(bounds)
+
+        window = rasterio.windows.from_bounds(*bounds, map.transform)
+
+        #print("widnow dir: ", dir(window))
+
+        image = map.read(window=window, out_shape=(map.count, out_shape[0], out_shape[1]))
         image = image[:3,:,:]
         image = np.rollaxis(image, 0,3) #from [3,ydim,xdim] to [ydim,xdim,3]
-        
-        self.controller.set_image(image, self.image_name)
-        print("ortho shape: ", np.shape(image))
-        self.map_ortho = map
-        self.current_bounds = np.array(map.bounds)
 
+        self.controller.set_image(image, self.image_name)
+
+        print("laodimage2, ortho shape: ", np.shape(image))
+        self.map_ortho = map
+        self.current_bounds = np.array(bounds)
+        self.image_transform = rasterio.Affine(self.image_resolution.get(), 0, bounds[0], 0, -self.image_resolution.get(), bounds[3])
         return image
+
     
     
     def _load_image_callback(self):
@@ -327,7 +345,7 @@ class InteractiveDemoApp(ttk.Frame):
                 if filename[-4:] == ".tif":
                     image = self._load_image(filename)
                     self.loaded_tif = True
-                    self.initial_image_name = filename
+                    self.image_name = filename
                 else:
 
                     image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
@@ -344,6 +362,15 @@ class InteractiveDemoApp(ttk.Frame):
                 # Update the image name label
                 self.image_name_label.config(text=f'Image: {self.image_name}')
                 self.polygonlist = []
+
+    def _load_dsm2(self, filename, bounds=None):
+        print("load_dsm called")
+        map_dsm = rasterio.open(filename)
+        if bounds is None:
+            bounds = map_dsm.bounds
+        window = rasterio.windows.from_bounds(*bounds, map_dsm.transform)
+
+
 
     def _load_dsm(self, filename):
         print("load_dsm called")
@@ -488,9 +515,12 @@ class InteractiveDemoApp(ttk.Frame):
         self.state['alpha_blend'].set(0.5)
         self.state['prob_thresh'].set(0.5)
         self.controller.reset_last_object()
+    
+    def _reload_image(self):
+        self._load_image(self.image_name, use_current_bounds=True)
 
-    def _update_resolution(self, value):
-        self.resolution = float(value)
+    def _update_image_resolution(self, value):
+        self.image_resolution.set(value)
 
     def _update_prob_thresh(self, value):
         if self.controller.is_incomplete_mask:
@@ -591,6 +621,43 @@ class InteractiveDemoApp(ttk.Frame):
     @staticmethod
     def _calculate_resolution(bounds):
         return int(bounds[3]-bounds[1]), int(bounds[2]-bounds[0])
+    
+    def _confirm_bbox2(self):
+        if self.image_on_canvas.bbox_x1 > self.image_on_canvas.bbox_x2:
+            self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2 = self.image_on_canvas.bbox_x2, self.image_on_canvas.bbox_x1
+        if self.image_on_canvas.bbox_y1 > self.image_on_canvas.bbox_y2:
+            self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2 = self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_y1
+
+        #bbox = [y1,y2,x1,x2], different than a real bounding box!!!
+        bbox = [self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2]
+
+        print("bbox: ", bbox)
+
+        initial_image_pixel_height = bbox[1]-bbox[0] + 1
+        initial_image_pixel_width = bbox[3]-bbox[2] + 1
+
+        #calculate windows and its bound coordinates
+        window_ortho = rasterio.windows.Window(bbox[2],bbox[0], initial_image_pixel_width, initial_image_pixel_height)
+
+
+        bounds_ch_coordinates = rasterio.windows.bounds(window_ortho,self.image_transform)
+
+        self._load_image(self.image_name, bounds=bounds_ch_coordinates)
+
+        if self.loaded_dsm:
+            assert(False and "dsm boundinng box not implemented yet")
+
+        self.save_mask_btn.configure(state=tk.NORMAL)
+        self.load_mask_btn.configure(state=tk.NORMAL)
+        self.reset_bbx_button.configure(state=tk.NORMAL)
+
+        #remove the drawn bbox
+        self._dismiss_bbox()
+        
+        #dont know if this stuff is needed
+        self._reset_last_object() #to delet previous clicks and stuff
+        self._reset_predictor()
+
             
     def _confirm_bbox(self):
         print("----------------------------------")
@@ -660,7 +727,8 @@ class InteractiveDemoApp(ttk.Frame):
         self.image_on_canvas._bbox = None
 
         if self.loaded_tif:
-            self._load_image(self.initial_image_name)
+            self.image_resolution.set(1) #set to fixed resolution
+            self._load_image(self.image_name)
         if self.loaded_dsm:
             self._load_dsm(self.initial_dsm_name)
         
