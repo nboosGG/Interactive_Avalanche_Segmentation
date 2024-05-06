@@ -21,14 +21,17 @@ class BasePredictor(object):
         self.click_models = None
         self.net_state_dict = None
         self.use_DSM = False
+        self.is_trained_with_DSM = False
 
         if isinstance(model, tuple):
             self.net, self.click_models = model
         else:
             self.net = model
-        print("use DSM in predictor: ", self.net.use_DSM)
-        self.use_DSM = self.net.use_DSM
-            
+        
+        if not self.net.use_DSM:
+            print("model is not trained with dsm, dsm cannot be used!!!!!!!!!!!!!!!!!!!!")
+        self.is_trained_with_DSM = self.net.use_DSM
+        
         self.to_tensor = transforms.ToTensor()
         self.transforms = []
         if max_size is not None:
@@ -37,6 +40,9 @@ class BasePredictor(object):
         self.transforms.append(SigmoidForPred())
         if with_flip:
             self.transforms.append(AddHorizontalFlip())
+
+    def _set_dsm_usage(self, use_dsm):
+        self.use_DSM = use_dsm and self.is_trained_with_DSM
 
     def set_input_image(self, image):
         image_nd = self.to_tensor(image)
@@ -76,7 +82,10 @@ class BasePredictor(object):
             prev_mask = self.prev_prediction
         if self.use_DSM and self.original_dsm is not None:
             #use the actual dsm data
+            print("using dsm for prediction")
             dsm = self.original_dsm
+        else:
+            print("DSM not used")
                 
         
         if hasattr(self.net, 'with_prev_mask') and self.net.with_prev_mask:

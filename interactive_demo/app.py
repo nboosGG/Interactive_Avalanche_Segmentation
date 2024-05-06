@@ -41,6 +41,7 @@ class InteractiveDemoApp(ttk.Frame):
     current_resolution = None
     polygonlist = None
     image_transform = None
+    use_DSM = None
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -57,6 +58,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.loaded_dsm = False
         self.map_ortho = None
         self.map_dsm = None
+        self.use_DSM = tk.BooleanVar(value=False)
         self.image_resolution = tk.DoubleVar(value=1)
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
@@ -170,7 +172,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.bbx_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.confirm_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Confirm Bounding Box', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._confirm_bbox2)
+                        state=tk.DISABLED, command=self._confirm_bbox)
         self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_bbx_button = \
             FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
@@ -197,6 +199,13 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.shapefile_options_frame, text='Delete Polygonlist', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._reset_polygonlist)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+        self.image_prediction_frame = FocusLabelFrame(master, text="Prediction settings")
+        self.image_prediction_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        self.use_DSM_button = \
+            FocusCheckButton(self.image_prediction_frame, text='use DSM', variable=self.use_DSM, onvalue = 1, offvalue = 0,
+                              height = 2, width = 15)
+        self.use_DSM_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         #zooming not used
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
@@ -271,7 +280,7 @@ class InteractiveDemoApp(ttk.Frame):
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
 
-    def _calculate_resolution2(self, bounds):
+    def _calculate_resolution(self, bounds):
         x_dist = bounds[2]-bounds[0]
         y_dist = bounds[3]-bounds[1]
 
@@ -289,20 +298,8 @@ class InteractiveDemoApp(ttk.Frame):
 
         return np.array([y_npixel, x_npixel]).astype(int)
 
-
-    def _calc_image_load_outshape(self, map):
-        print("resolution: ", self.image_resolution.get())
-        bounds = np.array(map.bounds)
-        x_dist = bounds[2] - bounds[0]
-        y_dist = bounds[3] - bounds[1]
-
-        pixel_x_direc = float(x_dist) // self.image_resolution.get()
-        pixel_y_direc = float(y_dist) // self.image_resolution.get()
-
-        return tuple(np.array([pixel_y_direc, pixel_x_direc]).astype(int))
-
     def _load_image(self, filename, bounds=None, use_current_bounds=False):
-        print("load image2 called")
+        print("load image2 called, use_DSM state: ")
         map = rasterio.open(filename)
         if bounds is None:
             if use_current_bounds:
@@ -311,7 +308,7 @@ class InteractiveDemoApp(ttk.Frame):
                 bounds = map.bounds
         assert(bounds is not None)
 
-        out_shape = self._calculate_resolution2(bounds)
+        out_shape = self._calculate_resolution(bounds)
 
         window = rasterio.windows.from_bounds(*bounds, map.transform)
 
@@ -322,22 +319,42 @@ class InteractiveDemoApp(ttk.Frame):
         image = np.rollaxis(image, 0,3) #from [3,ydim,xdim] to [ydim,xdim,3]
 
         self.controller.set_image(image, self.image_name)
-
-        print("laodimage2, ortho shape: ", np.shape(image))
         self.map_ortho = map
         self.current_bounds = np.array(bounds)
         self.image_transform = rasterio.Affine(self.image_resolution.get(), 0, bounds[0], 0, -self.image_resolution.get(), bounds[3])
         return image
+    
+    def _load_dsm(self, filename, bounds=None, use_current_bounds=False):
+        print("load dsm2 called")
+        map = rasterio.open(filename)
+        if bounds is None:
+            if use_current_bounds:
+                bounds = self.current_bounds
+            else:
+                bounds = map.bounds
+        assert(bounds is not None)
 
-    
-    
+        out_shape = self._calculate_resolution(bounds)
+
+        window = rasterio.windows.from_bounds(*bounds, map.transform)
+
+        #print("widnow dir: ", dir(window))
+
+        image = map.read(window=window, out_shape=(map.count, out_shape[0], out_shape[1]))
+        image = np.rollaxis(image, 0,3) #from [1,ydim,xdim] to [ydim,xdim,1]
+
+        self.controller.set_dsm(image, self.image_name)
+
+        self.map_dsm = map
+        return image
+
     def _load_image_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
             filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("Images", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif"),
+                ("Images", "*.jpg *.jpeg *.png *.bmp *.tif"),
                 ("All files", "*.*"),
-            ], title="Chose an image")
+            ], title="Chose a dsm file")
             self.image_name = Path(filename).stem
 
             if len(filename) > 0:
@@ -363,35 +380,14 @@ class InteractiveDemoApp(ttk.Frame):
                 self.image_name_label.config(text=f'Image: {self.image_name}')
                 self.polygonlist = []
 
-    def _load_dsm2(self, filename, bounds=None):
-        print("load_dsm called")
-        map_dsm = rasterio.open(filename)
-        if bounds is None:
-            bounds = map_dsm.bounds
-        window = rasterio.windows.from_bounds(*bounds, map_dsm.transform)
-
-
-
-    def _load_dsm(self, filename):
-        print("load_dsm called")
-        map_dsm = rasterio.open(filename)
-        dsm = map_dsm.read(1,)
-
-        dsm = np.expand_dims(dsm, 2) #from shape (y,x) to (y,x,1)
-        print("dsm shape: ", np.shape(dsm))
-        self.controller.set_dsm(dsm, self.dsm_name)
-        #self.save_mask_btn.configure(state=tk.NORMAL)
-        #self.load_mask_btn.configure(state=tk.NORMAL)
-
-        self.map_dsm = map_dsm
 
     def _load_dsm_callback(self):
         self.menubar.focus_set()
         if self._check_entry(self):
             filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("dsm", "*.jpg *.jpeg *.png *.bmp *.tiff *.tif"),
+                ("DSM", "*.tif"),
                 ("All files", "*.*"),
-            ], _load_image_callbacktitle="Chose a DSM file")
+            ], title="Chose a DSM file")
             self.dsm_name = Path(filename).stem
             print("dsm name: ", self.dsm_name)
 
@@ -401,21 +397,18 @@ class InteractiveDemoApp(ttk.Frame):
                 print("entered _load_dsm call")
                 self._load_dsm(filename)
                 self.loaded_dsm = True
-                self.initial_dsm_name = filename
+                self.dsm_name = filename
                 self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
 
     def contour_to_polygon(self, contour):
 
 
-        affine_trans = self.map_ortho.transform
+        affine_trans = self.image_transform
         x_resolution = affine_trans[0]
         y_resolution = affine_trans[4]
 
-
         top_left_x = self.current_bounds[0]
         top_left_y = self.current_bounds[3]
-
-        
 
         ll = []
         for i, cnt in enumerate(contour):
@@ -518,6 +511,8 @@ class InteractiveDemoApp(ttk.Frame):
     
     def _reload_image(self):
         self._load_image(self.image_name, use_current_bounds=True)
+        if self.loaded_dsm:
+            self._load_dsm(self.dsm_name, use_current_bounds=True)
 
     def _update_image_resolution(self, value):
         self.image_resolution.set(value)
@@ -617,12 +612,8 @@ class InteractiveDemoApp(ttk.Frame):
         self._set_click_dependent_widgets_state()
         if image is not None:
             self.image_on_canvas.reload_image(Image.fromarray(image), reset_canvas)
-
-    @staticmethod
-    def _calculate_resolution(bounds):
-        return int(bounds[3]-bounds[1]), int(bounds[2]-bounds[0])
     
-    def _confirm_bbox2(self):
+    def _confirm_bbox(self):
         if self.image_on_canvas.bbox_x1 > self.image_on_canvas.bbox_x2:
             self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2 = self.image_on_canvas.bbox_x2, self.image_on_canvas.bbox_x1
         if self.image_on_canvas.bbox_y1 > self.image_on_canvas.bbox_y2:
@@ -645,7 +636,8 @@ class InteractiveDemoApp(ttk.Frame):
         self._load_image(self.image_name, bounds=bounds_ch_coordinates)
 
         if self.loaded_dsm:
-            assert(False and "dsm boundinng box not implemented yet")
+            self._load_dsm(self.dsm_name, bounds=bounds_ch_coordinates)
+            #assert(False and "dsm boundinng box not implemented yet")
 
         self.save_mask_btn.configure(state=tk.NORMAL)
         self.load_mask_btn.configure(state=tk.NORMAL)
@@ -655,60 +647,6 @@ class InteractiveDemoApp(ttk.Frame):
         self._dismiss_bbox()
         
         #dont know if this stuff is needed
-        self._reset_last_object() #to delet previous clicks and stuff
-        self._reset_predictor()
-
-            
-    def _confirm_bbox(self):
-        print("----------------------------------")
-        print("flags: ", self.loaded_tif, self.loaded_dsm)
-        
-        if self.image_on_canvas.bbox_x1 > self.image_on_canvas.bbox_x2:
-            self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2 = self.image_on_canvas.bbox_x2, self.image_on_canvas.bbox_x1
-        if self.image_on_canvas.bbox_y1 > self.image_on_canvas.bbox_y2:
-            self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2 = self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_y1
-
-        #bbox = [y1,y2,x1,x2], different than a real bounding box!!!
-        bbox = [self.image_on_canvas.bbox_y1, self.image_on_canvas.bbox_y2, self.image_on_canvas.bbox_x1, self.image_on_canvas.bbox_x2]
-
-        print("bbox: ", bbox)
-
-        initial_image_pixel_height = bbox[1]-bbox[0] + 1
-        initial_image_pixel_width = bbox[3]-bbox[2] + 1
-
-        #calculate windows and its bound coordinates
-        window_ortho = rasterio.windows.Window(bbox[2],bbox[0], initial_image_pixel_width, initial_image_pixel_height)
-        bounds_ch_coordinates = rasterio.windows.bounds(window_ortho,self.map_ortho.transform)
-
-        #calculate resolution
-        height, width = self._calculate_resolution(bounds_ch_coordinates)
-        print("resolution:", height, width)
-        assert(height > 0 and width > 0 and "resolution calculation failed")
-
-        #load image
-        image = self.map_ortho.read(window=window_ortho)
-        image = image[:3,:,:] #remove 4th channel if it exists
-        image = np.rollaxis(image, 0,3)
-
-        if self.loaded_dsm:
-            window_dsm = rasterio.windows.from_bounds(*bounds_ch_coordinates, self.map_dsm.transform)
-            dsm = self.map_dsm.read(1, window=window_dsm)
-            dsm = np.expand_dims(dsm, 2)
-            print("!!!!!!!!!!!!!!!¨")
-            print("shape of image and dsm: ", np.shape(image), np.shape(dsm))
-
-        #hand ortho and dsm to controller
-        self.controller.set_image(image, self.image_name)
-        self.current_bounds = np.array(bounds_ch_coordinates)
-        if self.loaded_dsm:
-            self.controller.set_dsm(dsm, self.dsm_name)
-        self.save_mask_btn.configure(state=tk.NORMAL)
-        self.load_mask_btn.configure(state=tk.NORMAL)
-        self.reset_bbx_button.configure(state=tk.NORMAL)
-
-        #remove the drawn bbox
-        self._dismiss_bbox()
-
         self._reset_last_object() #to delet previous clicks and stuff
         self._reset_predictor()
 
@@ -730,7 +668,8 @@ class InteractiveDemoApp(ttk.Frame):
             self.image_resolution.set(1) #set to fixed resolution
             self._load_image(self.image_name)
         if self.loaded_dsm:
-            self._load_dsm(self.initial_dsm_name)
+            self.image_resolution.set(1) #set to fixed resolution
+            self._load_dsm(self.dsm_name)
         
         if reset_last_object:
             self._reset_last_object()
