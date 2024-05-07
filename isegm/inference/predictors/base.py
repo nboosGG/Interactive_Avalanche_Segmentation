@@ -42,7 +42,7 @@ class BasePredictor(object):
             self.transforms.append(AddHorizontalFlip())
 
     def _set_dsm_usage(self, use_dsm):
-        self.use_DSM = use_dsm and self.is_trained_with_DSM
+        self.use_DSM = use_dsm
 
     def set_input_image(self, image):
         image_nd = self.to_tensor(image)
@@ -82,14 +82,14 @@ class BasePredictor(object):
             prev_mask = self.prev_prediction
         if self.use_DSM and self.original_dsm is not None:
             #use the actual dsm data
-            print("using dsm for prediction")
             dsm = self.original_dsm
-        else:
-            print("DSM not used")
+
+        if self.is_trained_with_DSM:
+            input_image = torch.cat((input_image, dsm), axis=1)
                 
         
         if hasattr(self.net, 'with_prev_mask') and self.net.with_prev_mask:
-            input_image = torch.cat((input_image, dsm, prev_mask), dim=1)
+            input_image = torch.cat((input_image, prev_mask), dim=1)
         image_nd, clicks_lists, is_image_changed = self.apply_transforms(
             input_image, [clicks_list]
         )
@@ -109,8 +109,8 @@ class BasePredictor(object):
 
     def _get_prediction(self, image_nd, clicks_lists, is_image_changed):
         points_nd = self.get_points_nd(clicks_lists)
-        print("points shape: ", points_nd.shape)
-        print("image shape: ", image_nd.shape)
+        #print("points shape: ", points_nd.shape)
+        #print("image shape: ", image_nd.shape)
         return self.net(image_nd, points_nd)['instances']
 
     def _get_transform_states(self):

@@ -158,11 +158,11 @@ class InteractiveController:
         now = datetime.now()
         current_time = now.strftime("%H:%M:%S") #add to file
         print(current_time)
-        my_list = [current_time, "avalanche finished"] #write name of image to file
+        """my_list = [current_time, "avalanche finished"] #write name of image to file
         with open('/data/ritm_interactive_segmentation/datasets/User_Study/Results/tmp.csv', 'a', newline='') as file: # Opening a CSV file in append mode
             writer = csv.writer(file) # Using csv.writer to write the list to the CSV file
-            writer.writerow(my_list)  # Use writerow for single list
-
+            writer.writerow(my_list)  # Use writerow for single list"""
+        
     def reset_last_object(self, update_image=True):
         print("reset_last_object callt")
         self.states = []
@@ -183,6 +183,7 @@ class InteractiveController:
             self.predictor.set_input_image(self.image)
         if self.dsm is not None:
             self.predictor.set_input_dsm(self.dsm)
+        self.predictor.
 
     def reset_init_mask(self):
         self._init_mask = None

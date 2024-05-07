@@ -63,10 +63,10 @@ class ISModel(nn.Module):
                                       cpu_mode=cpu_dist_maps, use_disks=use_disks)
 
     def forward(self, image, points):
-        print("in model forward, image shape: ", image.shape, "points shape:", points.shape)
+        #print("in model forward, image shape: ", image.shape, "points shape:", points.shape)
         
         image, prev_mask, dsm = self.prepare_input(image)
-        print("in is module 69: ", image.shape, prev_mask.shape, dsm.shape)
+        #print("in is module 69: ", image.shape, prev_mask.shape)
         coord_features = self.get_coord_features(image, prev_mask, points)
         print("shapes coord features: ", coord_features.shape, image.shape)
 
@@ -105,11 +105,6 @@ class ISModel(nn.Module):
         #    print("after: ", image.shape)
 
         if self.use_DSM:
-            print("initial shape: ", image.shape, "prev mask: ", self.with_prev_mask)
-            print("find out which dim is dsm:", torch.sum(image,(0,2,3)))
-            #assert(False)
-
-
             dsm = image[:,3:4,:,:]
             if self.with_prev_mask:
                 prev_mask = image[:,4:,:,:]
@@ -117,11 +112,9 @@ class ISModel(nn.Module):
                     prev_mask = (prev_mask > 0.5).float()
         else:
             if self.with_prev_mask:
-                print("brrrr:", image.shape)
                 prev_mask = image[:,3:,:,:]
                 if self.binary_prev_mask:
                     prev_mask = (prev_mask > 0.5).float()
-            image = image[:,:3,:,:]
 
         
         #adjustment: normalization fkt only works for 3 dimensions, so normalize dsm on its own

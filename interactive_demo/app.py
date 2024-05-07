@@ -687,7 +687,7 @@ class InteractiveDemoApp(ttk.Frame):
         after_1st_click_state = tk.NORMAL if self.controller.is_incomplete_mask else tk.DISABLED
         before_1st_click_state = tk.DISABLED if self.controller.is_incomplete_mask else tk.NORMAL
 
-        self.finish_object_button.configure(state=after_1st_click_state)
+        #self.finish_object_button.configure(state=after_1st_click_state) #this button is currently not used
         self.undo_click_button.configure(state=after_1st_click_state)
         self.reset_clicks_button.configure(state=after_1st_click_state)
         self.zoomin_options_frame.set_frame_state(before_1st_click_state)
