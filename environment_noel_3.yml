@@ -121,7 +121,6 @@ dependencies:
   - libcblas=3.9.0
   - libclang=14.0.6
   - libclang13=14.0.6
-  - libcups=2.3.3
   - libcurl=7.86.0
   - libdb=6.2.32
   - libdeflate=1.10
@@ -180,7 +179,6 @@ dependencies:
   - munkres=1.1.4
   - mysql-common=8.0.32
   - mysql-libs=8.0.32
-  - ncurses=6.4
   - networkx=2.5.1
   - ninja=1.12.0
   - numpy=1.21.5
@@ -344,4 +342,5 @@ prefix: /home/boosnoel/miniconda3/envs/ias5
   - keyutils=1.6.1
   - nspr=4.35
   - libtool=2.4.7
-  
+  - libcups=2.3.3
+  - ncurses=6.4
