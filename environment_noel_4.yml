@@ -1,0 +1,26 @@
+name: ias5
+channels:
+  - conda-forge
+  - defaults
+dependencies:
+  - python=3.7
+  - rasterio=1.2.10
+  - scipy
+  - cython
+  - scikit-image
+  - pillow
+  - matplotlib
+  - imgaug[version='>=0.4']
+  - albumentations[version='>0.5']
+  - graphviz
+  - tqdm
+  - easydict
+  - torchvision[version='>=0.5.0']
+  - tensorboard
+  - future
+  - conda-forge::pyshp
+  - conda-forge::sridentify
+  - geopandas
+  - shapely
+  - conda-forge::pytest-shutil
+prefix: /home/boosnoel/miniconda3/envs/ias5
