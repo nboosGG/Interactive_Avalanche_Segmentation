@@ -16,7 +16,7 @@ def init_model(cfg):
     model_cfg.num_max_points = 24
 
     model = HRNetModel(width=18, ocr_width=64, with_aux_output=True, use_leaky_relu=True,
-                       use_rgb_conv=False, use_disks=True, norm_radius=5, with_prev_mask=True, use_DSM=True)
+                       use_rgb_conv=False, use_disks=True, norm_radius=5, with_prev_mask=True, use_DSM=False)
 
     model.to(cfg.device)
     model.apply(initializer.XavierGluon(rnd_type='gaussian', magnitude=2.0))
@@ -66,7 +66,7 @@ def train(model, cfg, model_cfg):
 
     
     trainset = DroneAvalancheDataset(
-        cfg.DS_v2_1m, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
+        cfg.DS_v3_5m_train, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -74,7 +74,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = DroneAvalancheDataset(
-        cfg.DS_v2_1m, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
+        cfg.DS_v3_5m_train, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,

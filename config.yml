@@ -30,6 +30,16 @@ AVALANCHE_PATH_21: "./datasets/DS_v2_0p5m_test/" #dataset v2 with 0.5m resolutio
 AVALANCHE_PATH_22: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
 AVALANCHE_PATH_23: "./datasets/DS_v2_0p1m_test/" #dataset v2 with 0.1m resolution
 AVALANCHE_PATH_24: "./datasets/DS_v2_1m_test/" #dataset v2 with 1m resolution
+AVALANCHE_PATH_25: "./datasets/DS_v3_0p2m_train/"
+AVALANCHE_PATH_26: "./datasets/DS_v3_0p2m_test/"
+AVALANCHE_PATH_27: "./datasets/DS_v3_0p5m_train/"
+AVALANCHE_PATH_28: "./datasets/DS_v3_0p5m_test/"
+AVALANCHE_PATH_29: "./datasets/DS_v3_1m_train/"
+AVALANCHE_PATH_30: "./datasets/DS_v3_1m_test/"
+AVALANCHE_PATH_31: "./datasets/DS_v3_2m_train/"
+AVALANCHE_PATH_32: "./datasets/DS_v3_2m_test/"
+AVALANCHE_PATH_33: "./datasets/DS_v3_5m_train/"
+AVALANCHE_PATH_34: "./datasets/DS_v3_5m_test/"
 
 
 
@@ -55,6 +65,18 @@ DS_v2_0p5m: "./datasets/DS_v2_0p5m/" #dataset v2 with 0.5m resolution
 DS_v2_0p5m_test: "./datasets/DS_v2_0p5m_test/" #test dataset v2 with 0.5m resolution
 DS_v2_0p1m: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
 DS_v2_0p1m_test: "./datasets/DS_v2_0p1m_test/" #test dataset v2 with 0.1m resolution
+
+DS_v3_0p2m_train: "./datasets/DS_v3_0p2m_train/"
+DS_v3_0p2m_test: "./datasets/DS_v3_0p2m_test/"
+DS_v3_0p5m_train: "./datasets/DS_v3_0p5m_train/"
+DS_v3_0p5m_test: "./datasets/DS_v3_0p5m_test/"
+DS_v3_1m_train: "./datasets/DS_v3_1m_train/"
+DS_v3_1m_test: "./datasets/DS_v3_1m_test/"
+DS_v3_2m_train: "./datasets/DS_v3_2m_train/"
+DS_v3_2m_test: "./datasets/DS_v3_2m_test/"
+DS_v3_5m_train: "./datasets/DS_v3_5m_train/"
+DS_v3_5m_test: "./datasets/DS_v3_5m_test/"
+
 
 
 # You can download the weights for HRNet from the repository:

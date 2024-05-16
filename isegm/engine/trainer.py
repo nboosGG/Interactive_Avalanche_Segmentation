@@ -260,6 +260,8 @@ class ISTrainer(object):
             batch_data['images']= ortho #delete the dsm stuff, since rest of code (visualization etc) not made for 4 dimension
             #print("shape of image: ", image.shape)
 
+            
+
             prev_output = torch.zeros_like(image, dtype=torch.float32)[:, :1, :, :]
 
             last_click_indx = None
@@ -281,7 +283,11 @@ class ISTrainer(object):
                     #print("first net call, shapes: ", image.shape, prev_output.shape)
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
 
-                    prev_output = torch.sigmoid(eval_model(net_input[:,[0,1,2,3,4]], points)['instances'])
+                    if not self.net.use_DSM:
+                        #print("in if statsttmtmt")
+                        net_input = net_input[:,[0,1,2,4]]
+                    #print("net input final shape: ", net_input.shape)
+                    prev_output = torch.sigmoid(eval_model(net_input, points)['instances'])
                     
                     points = get_next_points(prev_output, orig_gt_mask, points, click_indx + 1)
                     #print("points shapes: ", points.shape)
@@ -298,8 +304,10 @@ class ISTrainer(object):
             #print("net input shape after clicks: ", image.shape)
             #print("out---------------------------------------------------------------------------------")
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
+            if not self.net.use_DSM:
+                net_input = net_input[:,[0,1,2,4]]
             #print("net input shape: ", net_input.shape, image.shape, prev_output.shape)
-            #print("net input shapes: ", net_input.shape, image.shape, prev_output.shape)
+
             output = self.net(net_input, points)
  
             loss = 0.0

@@ -385,6 +385,7 @@ class HighResolutionNet(nn.Module):
         if additional_features is not None :
             x = x + additional_features
         if dsm is not None:
+            print("dsm stats: ", torch.sum(dsm), torch.max(dsm))
             dsm = self.convDSM(dsm)
             dsm = self.bnDSM(dsm)
             dsm = self.relu(dsm)

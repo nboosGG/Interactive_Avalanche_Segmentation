@@ -5,6 +5,6 @@ experiments
 pretrained_models
 *.so
 *.ipynb_checkpoints*
-*.yml
+#*.yml
 *.json
 #datasets

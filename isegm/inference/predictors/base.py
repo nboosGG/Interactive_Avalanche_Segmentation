@@ -46,7 +46,8 @@ class BasePredictor(object):
 
     def set_input_image(self, image):
         image_nd = self.to_tensor(image)
-        print("base.py: image shape: ", image_nd.shape)
+        image_nd = image_nd[:3,:,:]
+        #print("base.py: image shape: ", image_nd.shape)
         for transform in self.transforms:
             transform.reset()
         self.original_image = image_nd.to(self.device)
@@ -58,7 +59,7 @@ class BasePredictor(object):
     
     def set_input_dsm(self, dsm):
         dsm_nd = self.to_tensor(dsm)
-        print("base.py: dsm shape: ", dsm_nd.shape)
+        #print("base.py: dsm shape: ", dsm_nd.shape)
         for transform in self.transforms:
             transform.reset()
         self.original_dsm = dsm_nd.to(self.device)

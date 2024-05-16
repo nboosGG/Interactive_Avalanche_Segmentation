@@ -109,6 +109,26 @@ def get_dataset(dataset_name, cfg):
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_23)
     elif dataset_name == 'DS_v2_1m_test':
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_24)
+    elif dataset_name == 'DS_v3_0p2m_train':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_25)
+    elif dataset_name == 'DS_v3_0p2m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_26)
+    elif dataset_name == 'DS_v3_0p5m_train':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_27)
+    elif dataset_name == 'DS_v3_0p5m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_28)
+    elif dataset_name == 'DS_v3_1m_train':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_29)
+    elif dataset_name == 'DS_v3_1m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_30)
+    elif dataset_name == 'DS_v3_2m_train':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_31)
+    elif dataset_name == 'DS_v3_2m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_32)
+    elif dataset_name == 'DS_v3_5m_train':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_33)
+    elif dataset_name == 'DS_v3_5m_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_34)
     
     else:
         dataset = None

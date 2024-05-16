@@ -68,7 +68,7 @@ class ISModel(nn.Module):
         image, prev_mask, dsm = self.prepare_input(image)
         #print("in is module 69: ", image.shape, prev_mask.shape)
         coord_features = self.get_coord_features(image, prev_mask, points)
-        print("shapes coord features: ", coord_features.shape, image.shape)
+        #print("shapes coord features: ", coord_features.shape, image.shape)
 
         if self.rgb_conv is not None: #not used
             x = self.rgb_conv(torch.cat((image, coord_features), dim=1))
@@ -79,7 +79,7 @@ class ISModel(nn.Module):
             
             coord_features = self.maps_transform(coord_features) #1x1 conv 2->64
             #print("input shapes for backbone_forward: ", image.shape, coord_features.shape)
-            print("coord featrues shape after transform: ", coord_features.shape)
+            #print("coord featrues shape after transform: ", coord_features.shape)
             outputs = self.backbone_forward(image, dsm, coord_features)
 
         outputs['instances'] = nn.functional.interpolate(outputs['instances'], size=image.size()[2:],

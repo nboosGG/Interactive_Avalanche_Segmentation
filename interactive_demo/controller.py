@@ -183,7 +183,7 @@ class InteractiveController:
             self.predictor.set_input_image(self.image)
         if self.dsm is not None:
             self.predictor.set_input_dsm(self.dsm)
-        self.predictor.
+
 
     def reset_init_mask(self):
         self._init_mask = None
