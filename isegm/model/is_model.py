@@ -66,7 +66,9 @@ class ISModel(nn.Module):
         #print("in model forward, image shape: ", image.shape, "points shape:", points.shape)
         
         image, prev_mask, dsm = self.prepare_input(image)
-        #print("in is module 69: ", image.shape, prev_mask.shape)
+        #print("in is module 69: ", image.shape, prev_mask.shape, dsm.shape)
+        #print("in is module 69: ", image.shape, prev_mask.shape, torch.sum(dsm), torch.mean(dsm), torch.max(dsm))
+        #image = torch.cat((image,dsm), dim=1)
         coord_features = self.get_coord_features(image, prev_mask, points)
         #print("shapes coord features: ", coord_features.shape, image.shape)
 
@@ -122,9 +124,10 @@ class ISModel(nn.Module):
             dsm = torch.cat((dsm,dsm,dsm), dim=1)
             dsm = self.normalization(dsm)
             dsm = dsm[:,0:1,:,:]
-
+        
         #only ortho (3 channel rgb)
         image = image[:,:3,:,:]
+
 
 
         #normlaize image

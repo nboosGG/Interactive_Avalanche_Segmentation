@@ -40,6 +40,11 @@ AVALANCHE_PATH_31: "./datasets/DS_v3_2m_train/"
 AVALANCHE_PATH_32: "./datasets/DS_v3_2m_test/"
 AVALANCHE_PATH_33: "./datasets/DS_v3_5m_train/"
 AVALANCHE_PATH_34: "./datasets/DS_v3_5m_test/"
+AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig0p5_test/"
+AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig1_test/"
+AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig2p5_test/"
+AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig5_test/"
+
 
 
 
@@ -76,6 +81,10 @@ DS_v3_2m_train: "./datasets/DS_v3_2m_train/"
 DS_v3_2m_test: "./datasets/DS_v3_2m_test/"
 DS_v3_5m_train: "./datasets/DS_v3_5m_train/"
 DS_v3_5m_test: "./datasets/DS_v3_5m_test/"
+DS_v3_0p5m_gB_sig0p5_train: "./datasets/ds_v3_0p5m_gB_sig0p5_train"
+DS_v3_0p5m_gB_sig1_train: "./datasets/ds_v3_0p5m_gB_sig1_train"
+DS_v3_0p5m_gB_sig2p5_train: "./datasets/ds_v3_0p5m_gB_sig2p5_train"
+DS_v3_0p5m_gB_sig5_train: "./datasets/ds_v3_0p5m_gB_sig5_train"
 
 
 

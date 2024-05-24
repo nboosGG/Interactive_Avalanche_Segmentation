@@ -417,7 +417,6 @@ class InteractiveDemoApp(ttk.Frame):
                     pp[0] = pp[0] * x_resolution + top_left_x
                     pp[1] = pp[1]* y_resolution + top_left_y
                     ll.append(pp)
-        
         polygonomy = geometry.Polygon(ll)
 
         return polygonomy

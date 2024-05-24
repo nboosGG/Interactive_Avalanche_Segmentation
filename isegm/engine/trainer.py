@@ -15,6 +15,7 @@ from isegm.utils.vis import draw_probmap, draw_points
 from isegm.utils.misc import save_checkpoint
 from isegm.utils.serialization import get_config_repr
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
+from isegm.model.modeling.adapt_model import change_model_to_4chns
 from .optimizer import get_optimizer
 
 from code_noel.adjusted_models import *
@@ -87,8 +88,6 @@ class ISTrainer(object):
 
         self.optim = get_optimizer(model, optimizer, optimizer_params)
         model = self._load_weights(model)
-
-        #model = change_model(model)
 
         if cfg.multi_gpu:
             model = get_dp_wrapper(cfg.distributed)(model, device_ids=cfg.gpu_ids,
@@ -255,6 +254,8 @@ class ISTrainer(object):
             #print("original image input in is_trainer: ", image.shape)
 
             dsm = image[:,3,:,:]
+            #print("dsm stats l257: ", torch.sum(dsm), torch.mean(dsm), torch.std(dsm))
+            #assert(False)
             ortho = image[:,:3,:,:]
             #image = ortho
             batch_data['images']= ortho #delete the dsm stuff, since rest of code (visualization etc) not made for 4 dimension
@@ -280,7 +281,9 @@ class ISTrainer(object):
                         eval_model = self.net
                     else:
                         eval_model = self.click_models[click_indx]
-                    #print("first net call, shapes: ", image.shape, prev_output.shape)
+                    
+                    temp = image[:,3,:,:]
+                    #print("first net call, shapes: ", image.shape, prev_output.shape, torch.sum(temp), torch.std(temp), torch.max(temp))
                     net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
 
                     if not self.net.use_DSM:
@@ -304,6 +307,8 @@ class ISTrainer(object):
             #print("net input shape after clicks: ", image.shape)
             #print("out---------------------------------------------------------------------------------")
             net_input = torch.cat((image, prev_output), dim=1) if self.net.with_prev_mask else image
+            temp = image[:,3,:,:]
+            #print("main net call, shapes: ", image.shape, prev_output.shape, torch.sum(temp), torch.std(temp), torch.max(temp))
             if not self.net.use_DSM:
                 net_input = net_input[:,[0,1,2,4]]
             #print("net input shape: ", net_input.shape, image.shape, prev_output.shape)
@@ -440,4 +445,51 @@ def load_weights(model, path_to_weights):
     current_state_dict = model.state_dict()
     new_state_dict = torch.load(path_to_weights, map_location='cpu')['state_dict']
     current_state_dict.update(new_state_dict)
+
+    """print("in load weights, need to change now")
+    print(len(new_state_dict), len(current_state_dict))
+
+    #print(current_state_dict)
+    #for x in current_state_dict:
+    #    print("as:", dir(x))
+    counter1 = 0
+    counter2 = 0
+    counter3 = 0
+    ll = []
+    custom_dict = {}
+    for key in list(current_state_dict.keys()):
+        counter1 +=1
+        ll.append(key)
+        if 'feature_extractor.conv1.weight' in key:
+            counter3 += 1
+            #print(dir(key))
+            #print(current_state_dict[key])
+            tens = current_state_dict[key]
+            tens3 = tens[:,:1,:,:] #.expand(61,1,3,3)
+
+            tens4 = torch.cat((tens, tens3), dim=1)
+
+            print(tens.shape, tens3.shape, tens4.shape)
+            #current_state_dict[key] = tens4
+            custom_dict.update({key: tens4})
+
+        if 'maps_transform.0.weight' in key:
+            counter3 += 1
+            print()
+            initial_tensor = current_state_dict[key]
+            addidive_tensor = initial_tensor[:,:1,:,:]
+
+            new_tensor = torch.cat((initial_tensor, addidive_tensor), dim=1)
+            print(initial_tensor.shape, addidive_tensor.shape, new_tensor.shape)
+
+            #custom_dict.update({key: new_tensor})
+    
+
+    current_state_dict.update(custom_dict)
+
+    print("counters: ", counter1, counter2, counter3)
+    #print(ll)"""
+
+    
     model.load_state_dict(current_state_dict)
+
