@@ -1,5 +1,7 @@
 import tkinter as tk
 from tkinter import messagebox, filedialog, ttk
+from tkcalendar import Calendar, DateEntry
+from tktimepicker import AnalogPicker, AnalogThemes, constants
 
 import cv2
 import numpy as np
@@ -188,15 +190,15 @@ class InteractiveDemoApp(ttk.Frame):
         self.shapefile_options_frame = FocusLabelFrame(master, text="Shapefile management")
         self.shapefile_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.safe_mask_button = \
-            FocusButton(self.shapefile_options_frame, text='Safe current polygon', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.shapefile_options_frame, text='Save prediction', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._store_polygon)
         self.safe_mask_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.display_all_masks_button = \
-            FocusButton(self.shapefile_options_frame, text='Display all polygons', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.shapefile_options_frame, text='Display prev prediction', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._display_all_masks)
         self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_polygonlist = \
-            FocusButton(self.shapefile_options_frame, text='Delete Polygonlist', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.shapefile_options_frame, text='Dismiss saved avalanches', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._reset_polygonlist)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
@@ -278,6 +280,107 @@ class InteractiveDemoApp(ttk.Frame):
         self.click_radius_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
+        
+
+
+                                  
+
+        ################################################
+        #avalanche properties
+        self.avalanche_properties_frame = FocusLabelFrame(self, text="Avalanche Properties")
+        self.avalanche_properties_frame.pack(side=tk.TOP, fill='x', padx=5, pady=5)
+
+        ## avalanche information
+        self.avalanche_information_frame = FocusLabelFrame(self.avalanche_properties_frame, text="Avalanche Information")
+        self.avalanche_information_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+
+        self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:   not calculated yet')
+        self.avalanche_area_lbl.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+
+        ## avalanche date entry
+        self.release_date_frame = FocusLabelFrame(self.avalanche_properties_frame, text="Release Date + Time")
+        self.release_date_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+
+        self.cal_date = DateEntry(self.release_date_frame, width=12, background='darkblue',
+                                  foreground='white', borderwidth=2)
+        self.cal_date.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+        self.time_lbl = tk.Label(self.release_date_frame, text='Time:')
+        self.time_lbl.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+        self.release_time_btn = FocusButton(self.release_date_frame, text='Set Time', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._get_time)
+        self.release_time_btn.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
+
+
+        ## avalanche type entry
+        ### part 1
+        self.avalanche_type_frame = FocusLabelFrame(self.avalanche_properties_frame, text="     Avalanche Type     |     Avalanche Size    |")
+        self.avalanche_type_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+
+        self.avalanche_type_selection = ttk.Combobox(self.avalanche_type_frame, state="readonly", values=["slab", "glide snow", "loose snow", "unknown"])
+        self.avalanche_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
+        
+        self.avalanche_size_selection = ttk.Combobox(self.avalanche_type_frame, state="readonly", values=["1", "2", "3", "4", "5", "unknown"])
+        self.avalanche_size_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
+
+
+        ### part 2
+        self.avalanche_type_frame2 = FocusLabelFrame(self.avalanche_properties_frame, text="     Snow Moisture      |     Release Type      |")
+        self.avalanche_type_frame2.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+
+        self.snow_moisture_selection = ttk.Combobox(self.avalanche_type_frame2, state="readonly", values=["wet", "dry", "unknown"])
+        self.snow_moisture_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
+
+        self.release_type_selection = ttk.Combobox(self.avalanche_type_frame2, state="readonly", values=["natural", "person", "explosive", "snow groomer", "unknown"])
+        self.release_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
+
+        
+    def _nothing(self):
+        """empty function to use as playceholder"""
+        return
+    
+    def _reset_avalanche_properties(self):
+        #reset all avalanche properties
+        #reset date
+        today = datetime.now().date()
+        self.cal_date.set_date(today)
+        
+        #reset time:
+        self._reset_time()
+
+        #reset dropdown menus
+        self.avalanche_type_selection.select_clear()
+        self.avalanche_size_selection.select_clear()
+        self.snow_moisture_selection.select_clear()
+        self.release_type_selection.select_clear()
+        
+
+    def _updateTime(self, time):
+        print("time datatype: ", type(time), time, type(time[0]), type(time[2]))
+
+        self.time_lbl.configure(text="{}:{} {}".format(*time)) # remove 3rd flower bracket in case of 24 hrs time
+
+    def _reset_time(self):
+        self.time_lbl.configure(text="time unknown")
+        self._updateTime(tuple([0,0,'AM']))
+    
+    
+    def _get_time(self):
+        top = tk.Toplevel(self)
+
+        time_picker = AnalogPicker(top, type=constants.HOURS12)
+        time_picker.pack(expand=True, fill="both")
+
+        theme = AnalogThemes(time_picker)
+        theme.setDracula()
+        #theme.setNavyBlue()
+        #theme.setPurple()
+        ok_btn = tk.Button(top, text="set time", command=lambda: self._updateTime(time_picker.time()))
+        ok_btn.pack()
+        unkown_time_btn = tk.Button(top, text="time unknown", command=lambda: self._resetTime())
+        unkown_time_btn.pack()
         
 
     def _calculate_resolution(self, bounds):
@@ -380,6 +483,10 @@ class InteractiveDemoApp(ttk.Frame):
                 self.image_name_label.config(text=f'Image: {self.image_name}')
                 self.polygonlist = []
 
+                #update some UI stuff
+                #reset avalanche properties
+                self._reset_avalanche_properties()
+
 
     def _load_dsm_callback(self):
         self.menubar.focus_set()
@@ -400,9 +507,14 @@ class InteractiveDemoApp(ttk.Frame):
                 self.dsm_name = filename
                 self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
 
-    def contour_to_polygon(self, contour):
+
+    def translate_polygon(self, contour, translate_x, translate_y):
+        ll = []
+        for i, cnt in enumerate(contour):
+            a=5
 
 
+    def contour_to_polygon(self, contour, hierarchy):
         affine_trans = self.image_transform
         x_resolution = affine_trans[0]
         y_resolution = affine_trans[4]
@@ -410,16 +522,71 @@ class InteractiveDemoApp(ttk.Frame):
         top_left_x = self.current_bounds[0]
         top_left_y = self.current_bounds[3]
 
-        ll = []
-        for i, cnt in enumerate(contour):
-                for p in cnt.tolist():
+
+        cur_polygon_id = 0
+
+        has_next_outer_polygon = hierarchy[0,0,0] != -1
+
+        while(True):
+            
+            print("polygon generater state: id, continue flag:", cur_polygon_id, has_next_outer_polygon)
+
+            main_polygon = []
+
+            if len(contour[cur_polygon_id]) <= 3:
+                print("found small polygon (<3points). skip it")
+                if not has_next_outer_polygon:
+                    break
+                cur_polygon_id = hierarchy[0,cur_polygon_id,0]
+                has_next_outer_polygon = cur_polygon_id != -1
+                continue
+
+            for p in contour[cur_polygon_id]:
+                pp = p[0]
+                #print("pp: ", pp)
+                pp[0] = pp[0] * x_resolution + top_left_x
+                pp[1] = pp[1] * y_resolution + top_left_y
+                main_polygon.append(pp)
+
+
+            #iterate over holes
+            cur_hole_polygon_id = hierarchy[0,cur_polygon_id,2]
+            has_next_hole_polygon = cur_hole_polygon_id != -1
+            #print("next hole polygon id, + flag: ", cur_hole_polygon_id, has_next_hole_polygon)
+            
+            hole_polygons = []
+            hole_polygon_counter = 0
+            
+
+            while(has_next_hole_polygon):
+                #make_hole_polygon
+                hole_polygon = []
+
+                
+                for p in contour[cur_hole_polygon_id]:
                     pp = p[0]
                     pp[0] = pp[0] * x_resolution + top_left_x
                     pp[1] = pp[1]* y_resolution + top_left_y
-                    ll.append(pp)
-        polygonomy = geometry.Polygon(ll)
+                    hole_polygon.append(pp)
 
-        return polygonomy
+                hole_polygons.append(hole_polygon)
+                hole_polygon_counter += 1
+
+                cur_hole_polygon_id = hierarchy[0,cur_hole_polygon_id,0]
+                has_next_hole_polygon = cur_hole_polygon_id != -1
+            
+            polygonomy = geometry.Polygon(main_polygon, holes=hole_polygons)
+
+            self.polygonlist.append(polygonomy)
+
+            if not has_next_outer_polygon:
+                break
+
+            cur_polygon_id = hierarchy[0,cur_polygon_id,0]
+            has_next_outer_polygon = hierarchy[0,cur_polygon_id,0] != -1
+
+        print("polygon list: ", len(self.polygonlist))
+        return
 
     def _store_polygon(self):
 
@@ -428,10 +595,10 @@ class InteractiveDemoApp(ttk.Frame):
         if mask is None:
             return
         
-        contours, _ = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
+        contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        polygon = self.contour_to_polygon(contours)
-        self.polygonlist.append(polygon)
+        self.contour_to_polygon(contours, hierarchy)
+        #self.polygonlist.append(polygon)
 
         #delet clicks since they are stored
         self._reset_last_object()
@@ -460,9 +627,7 @@ class InteractiveDemoApp(ttk.Frame):
         
 
         filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
-            ("PNG image", "*.png"),
-            ("BMP image", "*.bmp"),
-            ("All files", "*.*"),
+            ("SHP image", "*.shp"),
         ], title="Save the current mask as...")
         print("output filename: ", filename)
 
@@ -707,11 +872,16 @@ class InteractiveDemoApp(ttk.Frame):
             else:
                 self.confirm_bbx_button.configure(state=tk.DISABLED)
 
-        if self.state['brs_mode'].get() == 'NoBRS':
-            self.net_clicks_entry.configure(state=tk.DISABLED)
-            self.net_clicks_label.configure(state=tk.DISABLED)
-            self.lbfgs_iters_entry.configure(state=tk.DISABLED)
-            self.lbfgs_iters_label.configure(state=tk.DISABLED)
+        
+        if self.polygonlist is not None and len(self.polygonlist) > 0:
+            self.reset_polygonlist.configure(state=tk.NORMAL)
+        else:
+            self.reset_polygonlist.configure(state=tk.DISABLED)
+
+
+
+        
+
 
     def _check_entry(self, widget):
         all_checked = True
