@@ -85,6 +85,14 @@ DS_v3_0p5m_gB_sig0p5_train: "./datasets/ds_v3_0p5m_gB_sig0p5_train"
 DS_v3_0p5m_gB_sig1_train: "./datasets/ds_v3_0p5m_gB_sig1_train"
 DS_v3_0p5m_gB_sig2p5_train: "./datasets/ds_v3_0p5m_gB_sig2p5_train"
 DS_v3_0p5m_gB_sig5_train: "./datasets/ds_v3_0p5m_gB_sig5_train"
+DS_v3_0p5m_mB_s9_train: "./datasets/ds_v3_0p5m_mB_s9_train/"
+DS_v3_0p5m_mB_s5_train: "./datasets/ds_v3_0p5m_mB_s5_train/"
+DS_v3_0p5m_mB_s3_train: "./datasets/ds_v3_0p5m_mB_s3_train/"
+DS_v3_0p5m_lpf_r50_train: "./datasets/ds_v3_0p5m_lpf_r50_train/"
+DS_v3_0p5m_lpf_r100_train: "./datasets/ds_v3_0p5m_lpf_r100_train/"
+DS_v3_0p5m_lpf_r200_train: "./datasets/ds_v3_0p5m_lpf_r200_train/"
+DS_v3_0p5m_lpf_r400_train: "./datasets/ds_v3_0p5m_lpf_r400_train/"
+DS_v3_0p5m_NoBlur_train: "./datasets/ds_v3_0p5m_NoBlur_train/"
 
 
 

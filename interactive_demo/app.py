@@ -44,6 +44,7 @@ class InteractiveDemoApp(ttk.Frame):
     polygonlist = None
     image_transform = None
     use_DSM = None
+    load_InSAR = None
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -61,7 +62,8 @@ class InteractiveDemoApp(ttk.Frame):
         self.map_ortho = None
         self.map_dsm = None
         self.use_DSM = tk.BooleanVar(value=False)
-        self.image_resolution = tk.DoubleVar(value=1)
+        self.load_InSAR = tk.BooleanVar(value=False)
+        self.image_resolution = tk.DoubleVar(value=5)
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
@@ -202,12 +204,17 @@ class InteractiveDemoApp(ttk.Frame):
                         state=tk.DISABLED, command=self._reset_polygonlist)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
-        self.image_prediction_frame = FocusLabelFrame(master, text="Prediction settings")
+        self.image_prediction_frame = FocusLabelFrame(master, text="Flags")
         self.image_prediction_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.use_DSM_button = \
             FocusCheckButton(self.image_prediction_frame, text='use DSM', variable=self.use_DSM, onvalue = 1, offvalue = 0,
                               height = 2, width = 15)
         self.use_DSM_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        self.loadInSAR_button = \
+            FocusCheckButton(self.image_prediction_frame, text='load InSAR', variable=self.load_InSAR, onvalue = 1, offvalue = 0,
+                              height = 2, width = 15)
+        self.loadInSAR_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
 
         #zooming not used
         self.zoomin_options_frame = FocusLabelFrame(master, text="ZoomIn options")
@@ -400,6 +407,19 @@ class InteractiveDemoApp(ttk.Frame):
         y_npixel = y_npixel / divider
 
         return np.array([y_npixel, x_npixel]).astype(int)
+    
+    def inSAR_image_preprocessing(self, image):
+        print("inSAR image preprocessing: ", np.shape(image))
+        image = image[0,:,:]
+        image = np.array([image,image,image])
+
+        max_val = np.amax(image)
+        min_val = np.amin(image)
+        image = (image - min_val) / (max_val - min_val)
+        image *= 255
+
+        print("inSAR preprocessing, return image shape: ", np.shape(image))
+        return image.astype(np.uint8)
 
     def _load_image(self, filename, bounds=None, use_current_bounds=False):
         print("load image2 called, use_DSM state: ")
@@ -418,8 +438,16 @@ class InteractiveDemoApp(ttk.Frame):
         #print("widnow dir: ", dir(window))
 
         image = map.read(window=window, out_shape=(map.count, out_shape[0], out_shape[1]))
+        print("raw image shape: ", np.shape(image))
+        print("inSAR flag: ", self.load_InSAR.get())
         image = image[:3,:,:]
+        
+        if self.load_InSAR.get():
+            image = self.inSAR_image_preprocessing(image)
+
         image = np.rollaxis(image, 0,3) #from [3,ydim,xdim] to [ydim,xdim,3]
+
+        print("loaded image shape: ", np.shape(image))
 
         self.controller.set_image(image, self.image_name)
         self.map_ortho = map

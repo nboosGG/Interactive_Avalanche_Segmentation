@@ -2,7 +2,9 @@ import os
 import gc
 import numpy as np
 
-from scipy.ndimage import gaussian_filter
+from scipy.ndimage import gaussian_filter, median_filter
+
+from scipy import fftpack
 
 
 import rasterio
@@ -15,6 +17,8 @@ import matplotlib.pyplot as pl
 import shapefile
 
 import cv2
+
+from PIL import Image, ImageDraw
 
 
 def show_matrix(matrix, verbose: bool, title: str):
@@ -125,6 +129,55 @@ def calc_resolution(bounds, pixel_per_meter):
 def gaussian_blur(data, sigma):
     return gaussian_filter(data, sigma)
 
+def median_blur(data, size):
+    return median_filter(data, size)
+
+
+
+
+
+def lpf(image, radius):
+    show_matrix(image, 0, "initial image")
+    image1_np = np.array(image)
+    #fft of image
+    fft1 = fftpack.fftshift(fftpack.fft2(image1_np))
+
+    #Create a low pass filter image
+    x,y = image1_np.shape[1],image1_np.shape[0]
+    #size of circle
+    #e_x,e_y=50,50
+    e_x,e_y=radius,radius
+    #create a box 
+    bbox=((x/2)-(e_x/2),(y/2)-(e_y/2),(x/2)+(e_x/2),(y/2)+(e_y/2))
+
+    low_pass=Image.new("L",(image1_np.shape[1],image1_np.shape[0]),color=0)
+    
+
+    draw1=ImageDraw.Draw(low_pass)
+    draw1.ellipse(bbox, fill=1)
+
+    low_pass_np=np.array(low_pass)
+
+    
+
+    #print("low pass shape: ", np.shape(low_pass_np))
+    show_matrix(low_pass_np.astype(np.float32), 0, "low pass filter")
+
+    #multiply both the images
+    #fft1 = np.transpose(fft1)
+    #low_pass_np = np.transpose(low_pass_np)
+    filtered=np.multiply(fft1,low_pass_np)
+
+    #inverse fft
+    ifft2 = np.real(fftpack.ifft2(fftpack.ifftshift(filtered)))
+    ifft2 = np.maximum(0, np.minimum(ifft2, 255))
+    ifft2 = ifft2.astype(np.uint8)
+
+    #print("ifft2 shape: ", np.shape(ifft2), type(ifft2[0,0]))
+
+    #cv2.imshow("lpf image", ifft2)
+    show_matrix(ifft2, 0, "blurred image")
+    return ifft2
 
 def blur(data, method):
      #print("datashape: ", np.shape(data))
@@ -132,17 +185,33 @@ def blur(data, method):
     nchannels = np.shape(data)[0]
     for i in range(nchannels):
         if method == 1:
-            sigma = 5
+            sigma = 0.5
             data[i,:,:] = gaussian_blur(data[i,:,:], sigma)
+        elif method == 2:
+            size = 3
+            data[i,:,:] = median_blur(data[i,:,:], size)
+        elif method == 3:
+            radius = 400 #in pixels
+            #print("initial shape: ", np.shape(data))
+            #data[i,:,:] = lpf(data[i,:,:], radius)
+            #data[i,:,:] = butter_lowpass_filter()
+            data[i,:,:] = lpf(data[i,:,:], radius)
 
     return data
 
+def rgb_normalization1(data):
+    return data / 255
 
+def rgb_normalization2(data):
+    min_val = np.amin(data)
+    max_val = np.amax(data)
+    data = (data - min_val) / (max_val - min_val)
+    return data
 
 
 def main():
     data_path = "/media/boosnoel/LaCie/noel/DS_v3_Sammlung/"
-    target_path = "/media/boosnoel/LaCie/noel/ds_v3_0p5m_gB_sig5/"
+    target_path = "/media/boosnoel/LaCie/noel/ds_v3_0p5m_RGBnormalization2/"
 
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
@@ -153,6 +222,8 @@ def main():
     sample_counter = 0
 
     verbose_show_data = False
+
+    ultracam_flagrgb_normalization = False
 
     datapoints_per_meter_read = 10
     datapoints_per_meter_write = 2
@@ -194,6 +265,9 @@ def main():
             src_polys = None
             gc.collect()
             continue
+            
+        #if not ultracam_flag: #for testing reasons
+        #    continue
 
         for iPoly in range(len(src_polys)):
             print("sampe nr: ", sample_counter)
@@ -218,7 +292,7 @@ def main():
             ortho_data = ortho_map.read(out_shape=(ortho_map.count, shape[0], shape[1]), window=ortho_data_read_window)
             ortho_data = ortho_data[:3,:,:]
 
-            if ultracam_flag:
+            if ultracam_flagrgb_normalization:
                 ortho_data = (ortho_data * (255/43000)).astype(np.uint8)
 
             dsm_data_read_window = rasterio.windows.from_bounds(*bounds_extended, dsm_map.transform)
@@ -234,9 +308,15 @@ def main():
             #blur and downscale data
             downscale_factor = datapoints_per_meter_read / datapoints_per_meter_write
 
-            blur_method = 1
+            blur_method = 0
             ortho_data = blur(ortho_data, blur_method)
-            dsm_data = blur(dsm_data, blur_method)
+            #dsm_data = blur(dsm_data, blur_method)
+
+
+            ortho_data = rgb_normalization2(ortho_data)
+
+            print("data stats: ", np.amin(ortho_data), np.amax(ortho_data))
+
             show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho blurred")
 
             #now downscale
@@ -273,7 +353,7 @@ def main():
             
 
             profile_ortho = ortho_map.profile.copy()
-            profile_ortho.update(transform=transform_adjusted, count=3)
+            profile_ortho.update(transform=transform_adjusted, count=3, dtype='float32')
 
 
             _, height, width = np.shape(ortho_data)

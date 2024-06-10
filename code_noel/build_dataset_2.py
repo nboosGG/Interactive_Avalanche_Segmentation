@@ -28,6 +28,9 @@ def get_bounds_from_shp(shp):
     right = None
     left = None
 
+    if len(shp.points) == 0:
+        return False, None
+
     for point in shp.points:
         if top is None:
             top = point[1]
@@ -44,7 +47,7 @@ def get_bounds_from_shp(shp):
         left = np.minimum(left, point[0])
     
     bounds = np.array([np.floor(left), np.floor(bottom), np.ceil(right), np.ceil(top)])
-    return bounds.astype(int)
+    return True, bounds.astype(int)
 
 def extend_bounds(bounds, extend, points_per_meter):
     """extend the bounds in all direction by [extend] with a minimum shape of (600,600)"""
@@ -109,7 +112,7 @@ def create_directiories(folder_list):
 
 def main():
     data_path = "/home/boosnoel/Documents/data/DS_v2_sammlung/"
-    target_path = "/home/boosnoel/Documents/data/DS_v2_1m/"
+    target_path = "/home/boosnoel/Documents/data/temp/"
 
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
@@ -155,7 +158,13 @@ def main():
             print("sampe nr: ", sample_counter)
 
             cur_poly = src_polys.shape(iPoly)
-            shp_bounds = get_bounds_from_shp(cur_poly)
+            suceeded, shp_bounds = get_bounds_from_shp(cur_poly)
+
+            if not suceeded:
+                assert(False)
+                continue
+
+            continue
 
             
             bounds_extended = extend_bounds(shp_bounds, extend, datapoints_per_meter)
@@ -175,7 +184,7 @@ def main():
             show_matrix(ortho_data[2,:,:], verbose_show_data, "ortho data, blue channel")
             show_matrix(dsm_data, verbose_show_data, "dsm data")
 
-            print("shape: ", np.shape(dsm_data))
+            print("shape: ", np.shape(ortho_data), np.shape(dsm_data))
 
             #now write the 2 maps. 
             #then use the shapefile to make a polygonmask with the same dimesnion as the maps
@@ -210,7 +219,7 @@ def main():
             polygon_mask = np.where(polygon_mask == 1, 1, 0)
 
 
-            show_matrix(polygon_mask, verbose_show_data, "avalange mask")
+            show_matrix(polygon_mask, verbose_show_data, "avalanche mask")
 
             #store mask
             profile_mask = dsm_map.profile.copy()
@@ -223,9 +232,6 @@ def main():
 
             sample_counter += 1
             gc.collect()
-
-
-
 
 
 if __name__ == '__main__':

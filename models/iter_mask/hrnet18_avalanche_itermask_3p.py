@@ -4,11 +4,9 @@ from isegm.data.datasets.drone_avalanche import DroneAvalancheDataset
 MODEL_NAME = 'avalanche_hrnet18'
 
 
-
 def main(cfg):
     model, model_cfg = init_model(cfg)
     train(model, cfg, model_cfg)
-
 
 def init_model(cfg):
     model_cfg = edict()
@@ -66,7 +64,7 @@ def train(model, cfg, model_cfg):
 
     
     trainset = DroneAvalancheDataset(
-        cfg.DS_v3_0p5m_gB_sig0p5_train, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
+        cfg.DS_v3_0p5m_NoBlur_train, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -74,7 +72,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = DroneAvalancheDataset(
-        cfg.DS_v3_0p5m_gB_sig0p5_train, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
+        cfg.DS_v3_0p5m_NoBlur_train, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,
