@@ -9,8 +9,8 @@ from scipy import fftpack
 
 import rasterio
 import rasterio.mask
-from rasterio.enums import Resampling
-from rasterio.profiles import DefaultGTiffProfile
+#from rasterio.enums import Resampling
+#from rasterio.profiles import DefaultGTiffProfile
 
 
 import matplotlib.pyplot as pl
@@ -211,7 +211,7 @@ def rgb_normalization2(data):
 
 def main():
     data_path = "/media/boosnoel/LaCie/noel/DS_v3_Sammlung/"
-    target_path = "/media/boosnoel/LaCie/noel/ds_v3_0p5m_RGBnormalization2/"
+    target_path = "/media/boosnoel/LaCie/noel/ds_v3_0p5m_RGBnormalization3/"
 
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
@@ -315,6 +315,8 @@ def main():
 
             ortho_data = rgb_normalization2(ortho_data)
 
+            #show_matrix(ortho_data[0,:,:], 1, "ortho norma")
+
             print("data stats: ", np.amin(ortho_data), np.amax(ortho_data))
 
             show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho blurred")
@@ -343,6 +345,7 @@ def main():
 
 
             print("write shapes: ", np.shape(ortho_data), np.shape(dsm_data))
+            print("write stats: ", np.amin(ortho_data), np.amax(ortho_data))
 
             resolution_write = 1. / datapoints_per_meter_write
 
