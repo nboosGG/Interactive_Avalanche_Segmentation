@@ -12,9 +12,11 @@ from isegm.inference.predictors import get_predictor
 from isegm.utils.vis import draw_with_blend_and_clicks
 from datetime import datetime
 
+import rasterio
+
 
 class InteractiveController:
-    def __init__(self, net, device, predictor_params, update_image_callback, prob_thresh=0.49): #set to 0.49 to equalize with evaluation instead of 0.75
+    def __init__(self, net, device, predictor_params, update_image_callback, get_polylist_callback, prob_thresh=0.49): #set to 0.49 to equalize with evaluation instead of 0.75
         self.net = net
         self.prob_thresh = prob_thresh
         self.clicker = clicker.Clicker()
@@ -32,14 +34,17 @@ class InteractiveController:
         self.predictor = None
         self.device = device
         self.update_image_callback = update_image_callback
+        self.get_polylist_callback = get_polylist_callback
         self.predictor_params = predictor_params
         self.reset_predictor()
         print("predictior params: ", predictor_params)
 
-    def set_image(self, image, filename):
+
+
+    def set_image(self, image, filename, reset_result_mask=False):
         self.image = image
         print("controller.py: set image called, shape: ", np.shape(image))
-        self._result_mask = np.zeros(image.shape[:2], dtype=np.uint16)
+
         self.object_count = 0
         self.reset_last_object(update_image=False)
         self.update_image_callback(reset_canvas=True)
@@ -164,12 +169,12 @@ class InteractiveController:
             writer.writerow(my_list)  # Use writerow for single list"""
         
     def reset_last_object(self, update_image=True):
-        print("reset_last_object callt")
+        print("reset_last_object called")
         self.states = []
         self.probs_history = []
         self.clicker.reset_clicks()
         self.reset_predictor()
-        self.reset_init_mask()
+        #self.reset_init_mask()
         if update_image:
             self.update_image_callback()
 
@@ -188,6 +193,7 @@ class InteractiveController:
     def reset_init_mask(self):
         self._init_mask = None
         self.clicker.click_indx_offset = 0
+        #self.reset_result_mask()
 
     @property
     def current_object_prob(self):
@@ -201,6 +207,8 @@ class InteractiveController:
     def is_incomplete_mask(self):
         return len(self.probs_history) > 0
 
+
+
     @property
     def result_mask(self):
         result_mask = self._result_mask.copy()
@@ -211,6 +219,8 @@ class InteractiveController:
     def get_visualization(self, alpha_blend, click_radius, bbox=None):
         if self.image is None:
             return None
+        
+        self.update_result_mask()
 
         results_mask_for_vis = self.result_mask
         if bbox is not None:           
@@ -224,3 +234,28 @@ class InteractiveController:
 
     def dismiss_bbox(self):
         pass
+
+
+    #compute progress mask from polygonlist
+    def reset_result_mask(self):
+        assert(self.image is not None)
+        self._result_mask = np.zeros(self.image.shape[:2], dtype=np.uint16)
+        
+    def update_result_mask(self):
+        assert(self.image is not None)
+        polylist, transform = self.get_polylist_callback()
+        
+        if polylist is None or len(polylist) == 0:
+            #print("update result mask called. polylist is None")
+            self.reset_result_mask()
+            return
+        #print("update result mask called. polylist len", len(polylist))
+        
+        image_shape = self.image.shape[:2]
+        #print("image shape: ", image_shape, "poly len: ", len(polylist))
+
+        img = rasterio.features.rasterize(polylist, image_shape, transform=transform, default_value=2, fill=0)
+        #print("result image stats: ", np.shape(img), np.amin(img), np.amax(img), "#nonzero", np.sum(img >= 1))
+
+        self._result_mask = img
+        

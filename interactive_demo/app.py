@@ -17,6 +17,7 @@ from datetime import datetime
 import rasterio
 import rasterio.mask
 import rasterio.windows
+import rasterio.transform
 
 import pandas as pd
 import geopandas as gpd
@@ -45,6 +46,7 @@ class InteractiveDemoApp(ttk.Frame):
     image_transform = None
     use_DSM = None
     load_InSAR = None
+    zoomed_out = None
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -57,20 +59,25 @@ class InteractiveDemoApp(ttk.Frame):
         master.geometry("+%d+%d" % (x, y))
         self.pack(fill="both", expand=True)
 
+        self.zoomed_out = False
         self.loaded_tif = False
         self.loaded_dsm = False
         self.map_ortho = None
         self.map_dsm = None
+        self.cur_shape = None
+        self.map_temp_results = None
         self.use_DSM = tk.BooleanVar(value=False)
         self.load_InSAR = tk.BooleanVar(value=False)
-        self.image_resolution = tk.DoubleVar(value=5)
+        self.image_resolution = tk.DoubleVar(value=1)
+        self.fringe = tk.DoubleVar(value=0.5)
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
 
         self.controller = InteractiveController(model, args.device,
                                                 predictor_params={'brs_mode': 'NoBRS'},
-                                                update_image_callback=self._update_image)
+                                                update_image_callback=self._update_image,
+                                                get_polylist_callback=self._get_polylist_transform_callback)
 
         self._init_state()
         self._add_menu()
@@ -200,8 +207,8 @@ class InteractiveDemoApp(ttk.Frame):
                         state=tk.DISABLED, command=self._display_all_masks)
         self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_polygonlist = \
-            FocusButton(self.shapefile_options_frame, text='Dismiss saved avalanches', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._reset_polygonlist)
+            FocusButton(self.shapefile_options_frame, text='Temp', bg='#b6d7a8', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._temp)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         self.image_prediction_frame = FocusLabelFrame(master, text="Flags")
@@ -288,6 +295,11 @@ class InteractiveDemoApp(ttk.Frame):
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
+        self.insar_fringes_frame = FocusLabelFrame(master, text="Fringe count")
+        self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
+                             variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
+        
 
 
                                   
@@ -347,6 +359,81 @@ class InteractiveDemoApp(ttk.Frame):
     def _nothing(self):
         """empty function to use as playceholder"""
         return
+    
+    def _list_changer(self, ll):
+        ll_ret = []
+
+        for l in ll:
+            ll_ret.append((l,255))
+        return ll_ret
+    
+    def _translate_polygon(self, polylist, aff: rasterio.Affine):
+        #toDo: iterate over polygon, and subtract topleft coordinate, then also multiply with resolution
+        x_offset = aff[2]
+        y_offset = aff[5]
+
+        ret_poly_list = []
+
+
+        for poly in polylist:
+            xx, yy = poly.exterior.coords.xy
+            #print(xx, yy)
+
+            xx = np.subtract(xx, int(x_offset))
+            yy = np.subtract(int(y_offset), yy)
+
+            ret_poly_list.append(geometry.Polygon(zip(xx,yy)))
+        
+        return ret_poly_list
+
+    def _get_current_stored_polygons(self):
+        return self.polygonlist
+
+    def _temp(self):
+        print("#polygons: ", len(self.polygonlist))
+        print("stuff: ", type(self.polygonlist))
+        """print("cur affine transform: ", self.image_transform)
+        print("bounding box: ", self.current_bounds)
+        aff = rasterio.transform.Affine(int(self.image_transform[0]),int(self.image_transform[1]),int(self.image_transform[2]),
+                                        int(self.image_transform[3]),int(self.image_transform[4]),int(self.image_transform[5]))
+        print("poly translation:")
+        polylist = self._translate_polygon(self.polygonlist, aff)
+        #for poly in self.polygonlist:
+        #    print("it is: ", poly)
+        
+        shappe = np.array(self.cur_shape)
+        #shape = shape[:,:,0]
+
+        print("shape: ", shappe, type(shappe), shappe[0], shappe[1], type(shappe[0]))
+        shapppe = np.zeros((2,), dtype=np.int)
+        
+        shapppe[0] = shappe[0].astype(int)
+        shapppe[1] = shappe[1].astype(int)
+        print("new: ", np.shape(shapppe), shapppe)
+        #geom = [shapes for shapes in self.polygonlist.geometry]
+        #templist = []
+        #img = rasterio.features.rasterize(self._list_changer(self.polygonlist), shapppe, self.image_transform)
+        #out = np.empty(shapppe)
+        #print("out shape: ", np.shape(out))
+
+        #for poly in polylist:
+        #    print(poly)
+
+        #img = rasterio.features.rasterize(self.polygonlist, shapppe, transform=self.image_transform, default_value=1, fill=5)
+
+        #print("image shape: ", np.shape(img), np.amax(img), np.amin(img))
+        #show_matrix(img, "daaaamn")
+
+        #self.controller._result_mask = img
+
+        self.controller.update_result_mask(self.polygonlist, self.image_transform)
+
+        print("shapes: ", np.shape(self.controller._result_mask), np.shape(self.controller.image))"""
+
+
+    def _get_polylist_transform_callback(self):
+        return self.polygonlist, self.image_transform
+
     
     def _reset_avalanche_properties(self):
         #reset all avalanche properties
@@ -411,23 +498,32 @@ class InteractiveDemoApp(ttk.Frame):
     def inSAR_image_preprocessing(self, image):
         print("inSAR image preprocessing: ", np.shape(image))
         image = image[0,:,:]
-        image = np.array([image,image,image])
+        
 
         max_val = np.amax(image)
         min_val = np.amin(image)
         image = (image - min_val) / (max_val - min_val)
         image *= 255
 
+
+
+        image = cv2.GaussianBlur(image, (3,3), 0)
+
+        image = np.array([image,image,image])
+
+
         print("inSAR preprocessing, return image shape: ", np.shape(image))
         return image.astype(np.uint8)
 
     def _load_image(self, filename, bounds=None, use_current_bounds=False):
+        load_entire_new_image_flag = False
         print("load image2 called, use_DSM state: ")
         map = rasterio.open(filename)
         if bounds is None:
             if use_current_bounds:
                 bounds = self.current_bounds
             else:
+                load_entire_new_image_flag = True
                 bounds = map.bounds
         assert(bounds is not None)
 
@@ -449,10 +545,11 @@ class InteractiveDemoApp(ttk.Frame):
 
         print("loaded image shape: ", np.shape(image))
 
-        self.controller.set_image(image, self.image_name)
+        self.image_transform = rasterio.Affine(self.image_resolution.get(), 0, bounds[0], 0, -self.image_resolution.get(), bounds[3])
+        self.controller.set_image(image, self.image_name, reset_result_mask=load_entire_new_image_flag)
         self.map_ortho = map
         self.current_bounds = np.array(bounds)
-        self.image_transform = rasterio.Affine(self.image_resolution.get(), 0, bounds[0], 0, -self.image_resolution.get(), bounds[3])
+        self.cur_shape = np.shape(np.array(image))
         return image
     
     def _load_dsm(self, filename, bounds=None, use_current_bounds=False):
@@ -489,7 +586,7 @@ class InteractiveDemoApp(ttk.Frame):
             self.image_name = Path(filename).stem
 
             if len(filename) > 0:
-
+                self.polygonlist = []
                 if filename[-4:] == ".tif":
                     image = self._load_image(filename)
                     self.loaded_tif = True
@@ -509,7 +606,6 @@ class InteractiveDemoApp(ttk.Frame):
     
                 # Update the image name label
                 self.image_name_label.config(text=f'Image: {self.image_name}')
-                self.polygonlist = []
 
                 #update some UI stuff
                 #reset avalanche properties
@@ -542,7 +638,7 @@ class InteractiveDemoApp(ttk.Frame):
             a=5
 
 
-    def contour_to_polygon(self, contour, hierarchy):
+    def _store_contours(self, contour, hierarchy):
         affine_trans = self.image_transform
         x_resolution = affine_trans[0]
         y_resolution = affine_trans[4]
@@ -625,8 +721,11 @@ class InteractiveDemoApp(ttk.Frame):
         
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        self.contour_to_polygon(contours, hierarchy)
-        #self.polygonlist.append(polygon)
+        self._store_contours(contours, hierarchy)
+        
+
+        #update result map in the UI
+        self.controller.update_result_mask()
 
         #delet clicks since they are stored
         self._reset_last_object()
@@ -649,10 +748,6 @@ class InteractiveDemoApp(ttk.Frame):
         print("#polygons found: ", counter)
         
         gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
-        #gdf = gdf.set_geometry('geometry', )
-
-        
-        
 
         filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
             ("SHP image", "*.shp"),
@@ -904,12 +999,8 @@ class InteractiveDemoApp(ttk.Frame):
         if self.polygonlist is not None and len(self.polygonlist) > 0:
             self.reset_polygonlist.configure(state=tk.NORMAL)
         else:
-            self.reset_polygonlist.configure(state=tk.DISABLED)
-
-
-
-        
-
+            #self.reset_polygonlist.configure(state=tk.DISABLED)
+            a=5
 
     def _check_entry(self, widget):
         all_checked = True
