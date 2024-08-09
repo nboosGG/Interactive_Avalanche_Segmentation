@@ -23,10 +23,11 @@ def show_matrix(matrix, verbose: bool, title: str):
 
 def main():
 
-    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/ds_v3_0p5m_NoBlur/"
+    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/ds_v3_0p5m_NoBlur_3/"
 
     for folder in os.listdir(path):
         print("name: ", folder)
+
         for filename in os.listdir(path + folder + "/"):
             if filename.endswith(".tif"):
                 mapp = rasterio.open(path + folder + "/" + filename)
@@ -39,9 +40,10 @@ def main():
                     data = data[:3,:,:]
                 
                 assert(np.shape(data)[0] < 4)
-                print("image shape: ", np.shape(data))
-
+                print("image stats: ", np.shape(data), np.amin(data), np.amax(data))
                 cv2.imwrite(path + folder + "/" + filename[:-4] + ".png", np.moveaxis(data, 0, -1))
+
+                
 
 
 

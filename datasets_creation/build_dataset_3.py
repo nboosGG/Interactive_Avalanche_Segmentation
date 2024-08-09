@@ -20,6 +20,8 @@ import cv2
 
 from PIL import Image, ImageDraw
 
+import earthpy.spatial as es
+
 
 def show_matrix(matrix, verbose: bool, title: str):
     """visualizes a 2d matrix/array if verbose evaluates to True"""
@@ -179,6 +181,27 @@ def lpf(image, radius):
     show_matrix(ifft2, 0, "blurred image")
     return ifft2
 
+
+
+def rgb_normalization(data):
+    maxx = np.amax(data)
+    minn = np.amin(data)
+
+    data_normalized = (data - minn) / (maxx - minn)
+
+    return (data_normalized * 255).astype(np.uint8)
+
+def rgb_channel_normalization(data):
+    for i in range(3):
+        data[i,:,:] = rgb_normalization(data[i,:,:])
+
+def calc_hillshade(dsm):
+    dsm[dsm < 0] = np.nan
+    hillshade = es.hillshade(dsm)
+    return hillshade
+
+
+
 def blur(data, method):
      #print("datashape: ", np.shape(data))
 
@@ -196,6 +219,9 @@ def blur(data, method):
             #data[i,:,:] = lpf(data[i,:,:], radius)
             #data[i,:,:] = butter_lowpass_filter()
             data[i,:,:] = lpf(data[i,:,:], radius)
+        elif method == 4:
+            data = rgb_normalization(data)
+            break
 
     return data
 
@@ -208,11 +234,18 @@ def rgb_normalization2(data):
     data = (data - min_val) / (max_val - min_val)
     return data
 
+def dsm_to_ortho(data):
+    data = np.where(data < 0, 0, data)
+    data /= (4000*255)
+    return data.astype(np.uint8)
+
+def basic_gradient(data):
+    grad_x, grad_y = np.gradient()
+
 
 def main():
-    data_path = "/media/boosnoel/LaCie/noel/DS_v3_Sammlung/"
-    target_path = "/media/boosnoel/LaCie/noel/ds_v3_0p5m_RGBnormalization3/"
-
+    data_path = "/mnt/data2/MA-data/DS_v3_Sammlung/"
+    target_path = "/mnt/data2/MA-data/ds_v3_0p5m_NoBlur_2/"
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
     path_storage_mask = target_path + "masks/"
@@ -223,7 +256,7 @@ def main():
 
     verbose_show_data = False
 
-    ultracam_flagrgb_normalization = False
+    ultracam_flagrgb_normalization = True
 
     datapoints_per_meter_read = 10
     datapoints_per_meter_write = 2
@@ -269,6 +302,7 @@ def main():
         #if not ultracam_flag: #for testing reasons
         #    continue
 
+
         for iPoly in range(len(src_polys)):
             print("sampe nr: ", sample_counter)
 
@@ -284,23 +318,32 @@ def main():
             top_left_coordinate = np.array([bounds_extended[0], bounds_extended[3]])
 
             
-
+            #print("bounds: ", bounds_extended)
+            #print("data_points per meter: ", datapoints_per_meter_read)
             shape = calc_resolution(bounds_extended, datapoints_per_meter_read)
             height, width = shape
 
+            #prevent upscaling
+            #height = np.minimum(height, ortho_map.height)
+            #width = np.minimum(width, ortho_map.width)
+
+
             ortho_data_read_window = rasterio.windows.from_bounds(*bounds_extended, ortho_map.transform)
+
             ortho_data = ortho_map.read(out_shape=(ortho_map.count, shape[0], shape[1]), window=ortho_data_read_window)
             ortho_data = ortho_data[:3,:,:]
 
-            if ultracam_flagrgb_normalization:
-                ortho_data = (ortho_data * (255/43000)).astype(np.uint8)
+
+            print("orthodata : ", np.amax(ortho_data), np.amin(ortho_data))
+            if ultracam_flag and ultracam_flagrgb_normalization:
+                ortho_data = (ortho_data * (255/65535)).astype(np.uint8)
 
             dsm_data_read_window = rasterio.windows.from_bounds(*bounds_extended, dsm_map.transform)
             dsm_data = dsm_map.read(1, out_shape=shape, window=dsm_data_read_window)
             dsm_data = np.expand_dims(dsm_data, axis=0)
 
             show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho data, blue channel")
-            show_matrix(dsm_data, verbose_show_data, "dsm data")
+            show_matrix(dsm_data[0,:,:], verbose_show_data, "dsm data")
 
             print("initial shapes: ", np.shape(ortho_data), np.shape(dsm_data))
 
@@ -308,16 +351,16 @@ def main():
             #blur and downscale data
             downscale_factor = datapoints_per_meter_read / datapoints_per_meter_write
 
-            blur_method = 0
-            ortho_data = blur(ortho_data, blur_method)
+            method = 0
+            ortho_data = blur(ortho_data, method)
             #dsm_data = blur(dsm_data, blur_method)
 
 
-            ortho_data = rgb_normalization2(ortho_data)
+            #ortho_data = rgb_normalization2(ortho_data)
 
             #show_matrix(ortho_data[0,:,:], 1, "ortho norma")
 
-            print("data stats: ", np.amin(ortho_data), np.amax(ortho_data))
+            
 
             show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho blurred")
 
@@ -341,6 +384,26 @@ def main():
 
             ortho_data = np.moveaxis(ortho_data, 2, 0)
 
+            print("data statssss: ", np.amin(ortho_data), np.amax(ortho_data), np.amin(dsm_data), np.amax(dsm_data))
+            
+            #hillshade = calc_hillshade(dsm_data)
+            #hillshade = np.zeros_like(dsm_data)
+
+
+            #ortho_data[1,:,:] = hillshade
+            #ortho_data[1,:,:] = ortho_data[0,:,:]
+            #ortho_data[2,:,:] = ortho_data[0,:,:]
+            print("orhto min max stats 1: ", np.amin(ortho_data), np.amax(ortho_data))
+            #ortho_data = rgb_normalization(ortho_data)
+            #ortho_data = rgb_channel_normalization(ortho_data)
+            print("orhto min max stats 2: ", np.amin(ortho_data), np.amax(ortho_data))
+
+            ortho_data[ortho_data * 0 != 0] = 0
+
+            print("data statsssss: ", np.amin(ortho_data), np.amax(ortho_data), np.amin(dsm_data), np.amax(dsm_data))
+
+            print("ortho stats: ", np.amin(ortho_data), np.amax(ortho_data), np.var(ortho_data))
+
             show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho resampled")
 
 
@@ -356,13 +419,13 @@ def main():
             
 
             profile_ortho = ortho_map.profile.copy()
-            profile_ortho.update(transform=transform_adjusted, count=3, dtype='float32')
+            profile_ortho.update(transform=transform_adjusted, count=3, dtype='uint8')
 
 
             _, height, width = np.shape(ortho_data)
             profile_ortho.update(width=width, height=height)
 
-
+            print("ortho stats just before writing: ", np.shape(ortho_data), np.amin(ortho_data), np.amax(ortho_data))
             map_sample_ortho = rasterio.open(path_storage_ortho + str(sample_counter) + ".tif", 'w+', **profile_ortho)
             window_ortho_write = rasterio.windows.from_bounds(*bounds_extended, map_sample_ortho.transform)
             map_sample_ortho.write(ortho_data.astype(np.uint8))
@@ -397,35 +460,8 @@ def main():
 
             sample_counter += 1
             gc.collect()
+        
 
-
-            """
-
-            #try to read entire bounds
-            read_successful = False
-            counter = 0
-
-            window_bounds = [bounds_extended]
-
-            while True: #do while loop
-
-                try:
-                    a=5
-                    #read alll maps
-                    for bounds in window_bounds:
-
-
-
-                    read_successful = True
-                
-                except OSError:
-                    print("os error, uuups")
-                
-
-                if read_successful:
-                    break
-
-                window_bounds = frag_window_bounds(window_bounds) """
 
 
 

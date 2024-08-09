@@ -38,8 +38,8 @@ def train(model, cfg, model_cfg):
     train_augmentator = Compose([
         UniformRandomResize(scale_range=(0.75, 1.25)), # keep always
         HorizontalFlip(),
-        Rotate(limit=10),
-        ShiftScaleRotate(shift_limit=0.03, scale_limit=0,
+        Rotate(limit=10), #default 10
+        ShiftScaleRotate(shift_limit=0.005, scale_limit=0,   #shift default 0.03
                          rotate_limit=(-3, 3), border_mode=0, p=0.75),
         PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0) , # keep always
         RandomCrop(*crop_size), #keep always
@@ -64,7 +64,7 @@ def train(model, cfg, model_cfg):
 
     
     trainset = DroneAvalancheDataset(
-        cfg.DS_v3_0p5m_NoBlur_train, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
+        cfg.ds_v3_0p5m_DSM_only_max4k_train, #cfg.AVALANCHE_TRAIN, #AVALANCHE_TRAIN
         split='train',
         augmentator=train_augmentator,
         keep_background_prob=0.01,
@@ -72,7 +72,7 @@ def train(model, cfg, model_cfg):
     )
 
     valset = DroneAvalancheDataset(
-        cfg.DS_v3_0p5m_NoBlur_train, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
+        cfg.ds_v3_0p5m_DSM_only_max4k_train, #cfg.AVALANCHE_VALI, #AVALANCHE_VALI
         split='val',
         augmentator=val_augmentator,
         keep_background_prob=0.01,

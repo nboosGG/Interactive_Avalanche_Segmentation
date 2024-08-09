@@ -12,6 +12,8 @@ from interactive_demo.canvas import CanvasImage
 from interactive_demo.controller import InteractiveController
 from interactive_demo.wrappers import BoundedNumericalEntry, FocusHorizontalScale, FocusCheckButton, \
     FocusButton, FocusLabelFrame
+from interactive_demo.shapefile_attributes_utils import attributes_converter
+from interactive_demo.export import Export
 from datetime import datetime
 
 import rasterio
@@ -24,7 +26,9 @@ import geopandas as gpd
 
 import shapefile
 
+import pyproj
 from shapely import geometry
+from shapely.ops import transform
 
 import matplotlib.pyplot as plt
 
@@ -43,10 +47,14 @@ class InteractiveDemoApp(ttk.Frame):
     current_bounds = None
     current_resolution = None
     polygonlist = None
+    attribute_list = None
     image_transform = None
     use_DSM = None
     load_InSAR = None
     zoomed_out = None
+
+    #avalanche properties variables:
+    avalanche_property_value = None
 
     def __init__(self, master, args, model):
         super().__init__(master)
@@ -70,6 +78,13 @@ class InteractiveDemoApp(ttk.Frame):
         self.load_InSAR = tk.BooleanVar(value=False)
         self.image_resolution = tk.DoubleVar(value=1)
         self.fringe = tk.DoubleVar(value=0.5)
+
+        #avalanche properties variables
+        self.avalanche_type_var = tk.StringVar(value="UNKNOWN")
+        self.avalanche_size_var = tk.StringVar(value="UNKNOWN")
+        self.snow_moisture_var = tk.StringVar(value="UNKNOWN")
+        self.release_type_var = tk.StringVar(value="UNKNOWN")
+
 
         self.brs_modes = ['NoBRS', 'RGB-BRS', 'DistMap-BRS', 'f-BRS-A', 'f-BRS-B', 'f-BRS-C']
         self.limit_longest_size = args.limit_longest_size
@@ -124,13 +139,20 @@ class InteractiveDemoApp(ttk.Frame):
         button.pack(side=tk.LEFT)
         button = FocusButton(self.menubar, text='Load DSM', command=self._load_dsm_callback)
         button.pack(side=tk.LEFT)
-        self.save_mask_btn = FocusButton(self.menubar, text='Save SHP', command=self._save_polygon_callback)
-        self.save_mask_btn.pack(side=tk.LEFT)
-        self.save_mask_btn.configure(state=tk.DISABLED)
 
         self.load_mask_btn = FocusButton(self.menubar, text='Load mask', command=self._load_mask_callback)
         self.load_mask_btn.pack(side=tk.LEFT)
         self.load_mask_btn.configure(state=tk.DISABLED)
+
+        self.save_mask_btn = FocusButton(self.menubar, text='Export SHP', command=self._save_polygon_callback)
+        self.save_mask_btn.pack(side=tk.LEFT)
+        self.save_mask_btn.configure(state=tk.DISABLED)
+
+        self.export_db_btn = FocusButton(self.menubar, text="Export DB", command=self._export_to_DB_callback)
+        self.export_db_btn.pack(side=tk.LEFT)
+        self.export_db_btn.configure(state=tk.DISABLED)
+
+
 
         # Add label to display the image name
         self.image_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
@@ -182,16 +204,16 @@ class InteractiveDemoApp(ttk.Frame):
         self.bbx_options_frame = FocusLabelFrame(master, text="Bounding Box management")
         self.bbx_options_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
         self.confirm_bbx_button = \
-            FocusButton(self.bbx_options_frame, text='Confirm Bounding Box', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.bbx_options_frame, text='Confirm', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.DISABLED, command=self._confirm_bbox)
         self.confirm_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_bbx_button = \
-            FocusButton(self.bbx_options_frame, text='Reset Bounding Box', bg='#ea9999', fg='black', width=15, height=2,
+            FocusButton(self.bbx_options_frame, text='Reset', bg='#ea9999', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._reset_bbox)
         self.reset_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         #dismiss bbox button
         self.dismiss_bbx_button = \
-            FocusButton(self.bbx_options_frame, text='Dismiss Box', bg='#ffc966', fg='black', width=15, height=2,
+            FocusButton(self.bbx_options_frame, text='Dismiss', bg='#ffc966', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._dismiss_bbox)
         self.dismiss_bbx_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
@@ -202,14 +224,19 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.shapefile_options_frame, text='Save prediction', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._store_polygon)
         self.safe_mask_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-        self.display_all_masks_button = \
-            FocusButton(self.shapefile_options_frame, text='Display prev prediction', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.DISABLED, command=self._display_all_masks)
-        self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        #self.display_all_masks_button = \
+        #    FocusButton(self.shapefile_options_frame, text='Display prev prediction', bg='#b6d7a8', fg='black', width=15, height=2,
+        #                state=tk.DISABLED, command=self._display_all_masks)
+        #self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
         self.reset_polygonlist = \
-            FocusButton(self.shapefile_options_frame, text='Temp', bg='#b6d7a8', fg='black', width=15, height=2,
+            FocusButton(self.shapefile_options_frame, text='Reset Predicitons', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._temp)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
+        self.temp_btn = \
+            FocusButton(self.shapefile_options_frame, text='Temp', bg='#ea9999', fg='black', width=15, height=2,
+                        state=tk.NORMAL, command=self._temp)
+        self.temp_btn.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         self.image_prediction_frame = FocusLabelFrame(master, text="Flags")
         self.image_prediction_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
@@ -217,10 +244,10 @@ class InteractiveDemoApp(ttk.Frame):
             FocusCheckButton(self.image_prediction_frame, text='use DSM', variable=self.use_DSM, onvalue = 1, offvalue = 0,
                               height = 2, width = 15)
         self.use_DSM_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-        self.loadInSAR_button = \
-            FocusCheckButton(self.image_prediction_frame, text='load InSAR', variable=self.load_InSAR, onvalue = 1, offvalue = 0,
-                              height = 2, width = 15)
-        self.loadInSAR_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        #self.loadInSAR_button = \
+        #    FocusCheckButton(self.image_prediction_frame, text='load InSAR', variable=self.load_InSAR, onvalue = 1, offvalue = 0,
+        #                      height = 2, width = 15)
+        #self.loadInSAR_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
 
         #zooming not used
@@ -295,10 +322,10 @@ class InteractiveDemoApp(ttk.Frame):
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
-        self.insar_fringes_frame = FocusLabelFrame(master, text="Fringe count")
-        self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
-                             variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
+        #self.insar_fringes_frame = FocusLabelFrame(master, text="Fringe count")
+        #self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        #FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
+        #                     variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
 
 
@@ -313,7 +340,8 @@ class InteractiveDemoApp(ttk.Frame):
         self.avalanche_information_frame = FocusLabelFrame(self.avalanche_properties_frame, text="Avalanche Information")
         self.avalanche_information_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
 
-        self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:   not calculated yet')
+        #self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:   not calculated yet')
+        self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:  ')
         self.avalanche_area_lbl.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
 
@@ -338,10 +366,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.avalanche_type_frame = FocusLabelFrame(self.avalanche_properties_frame, text="     Avalanche Type     |     Avalanche Size    |")
         self.avalanche_type_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
 
-        self.avalanche_type_selection = ttk.Combobox(self.avalanche_type_frame, state="readonly", values=["slab", "glide snow", "loose snow", "unknown"])
+        self.avalanche_type_selection = ttk.Combobox(self.avalanche_type_frame, textvariable=self.avalanche_type_var, state="readonly", values=["SLAB", "GLIDE SNOW", "LOOSE SNOW", "UNKNOWN"])
         self.avalanche_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
         
-        self.avalanche_size_selection = ttk.Combobox(self.avalanche_type_frame, state="readonly", values=["1", "2", "3", "4", "5", "unknown"])
+        self.avalanche_size_selection = ttk.Combobox(self.avalanche_type_frame, textvariable=self.avalanche_size_var, state="readonly", values=["1", "2", "3", "4", "5", "UNKNOWN"])
         self.avalanche_size_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
 
 
@@ -349,10 +377,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.avalanche_type_frame2 = FocusLabelFrame(self.avalanche_properties_frame, text="     Snow Moisture      |     Release Type      |")
         self.avalanche_type_frame2.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
 
-        self.snow_moisture_selection = ttk.Combobox(self.avalanche_type_frame2, state="readonly", values=["wet", "dry", "unknown"])
+        self.snow_moisture_selection = ttk.Combobox(self.avalanche_type_frame2, textvariable=self.snow_moisture_var, state="readonly", values=["WET", "DRY", "UNKNOWN"])
         self.snow_moisture_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
 
-        self.release_type_selection = ttk.Combobox(self.avalanche_type_frame2, state="readonly", values=["natural", "person", "explosive", "snow groomer", "unknown"])
+        self.release_type_selection = ttk.Combobox(self.avalanche_type_frame2, textvariable=self.release_type_var, state="readonly", values=["NATURAL", "PERSON", "EXPLOSIV", "SNOW GROOMER", "UNKNOWN"])
         self.release_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
 
         
@@ -385,54 +413,70 @@ class InteractiveDemoApp(ttk.Frame):
             ret_poly_list.append(geometry.Polygon(zip(xx,yy)))
         
         return ret_poly_list
+    
+    
+    def _reproject_polygon_list(self, polygonlist):
+        npoly = len(polygonlist)
+
+        from_epsg = pyproj.CRS('EPSG:2056')
+        to_epsg = pyproj.CRS('EPSG:4326')
+        project = pyproj.Transformer.from_crs(from_epsg, to_epsg, always_xy=True).transform
+
+        polylist_transformed = []
+
+
+        for poly in polygonlist:
+            poly_transformed = transform(project, poly)
+            polylist_transformed.append(poly_transformed)
+
+        return polylist_transformed
+
+
 
     def _get_current_stored_polygons(self):
         return self.polygonlist
 
     def _temp(self):
-        print("#polygons: ", len(self.polygonlist))
-        print("stuff: ", type(self.polygonlist))
-        """print("cur affine transform: ", self.image_transform)
-        print("bounding box: ", self.current_bounds)
-        aff = rasterio.transform.Affine(int(self.image_transform[0]),int(self.image_transform[1]),int(self.image_transform[2]),
-                                        int(self.image_transform[3]),int(self.image_transform[4]),int(self.image_transform[5]))
-        print("poly translation:")
-        polylist = self._translate_polygon(self.polygonlist, aff)
-        #for poly in self.polygonlist:
-        #    print("it is: ", poly)
+
+        Export.temp(self.polygonlist)
         
-        shappe = np.array(self.cur_shape)
-        #shape = shape[:,:,0]
+        print("polylist length: ", len(self.polygonlist))
+        print("avalanche attribute length: ", len(self.attribute_list))
 
-        print("shape: ", shappe, type(shappe), shappe[0], shappe[1], type(shappe[0]))
-        shapppe = np.zeros((2,), dtype=np.int)
-        
-        shapppe[0] = shappe[0].astype(int)
-        shapppe[1] = shappe[1].astype(int)
-        print("new: ", np.shape(shapppe), shapppe)
-        #geom = [shapes for shapes in self.polygonlist.geometry]
-        #templist = []
-        #img = rasterio.features.rasterize(self._list_changer(self.polygonlist), shapppe, self.image_transform)
-        #out = np.empty(shapppe)
-        #print("out shape: ", np.shape(out))
+        mask = (self.controller.result_mask * 255).astype(np.uint8)
 
-        #for poly in polylist:
-        #    print(poly)
-
-        #img = rasterio.features.rasterize(self.polygonlist, shapppe, transform=self.image_transform, default_value=1, fill=5)
-
-        #print("image shape: ", np.shape(img), np.amax(img), np.amin(img))
-        #show_matrix(img, "daaaamn")
-
-        #self.controller._result_mask = img
-
-        self.controller.update_result_mask(self.polygonlist, self.image_transform)
-
-        print("shapes: ", np.shape(self.controller._result_mask), np.shape(self.controller.image))"""
+        print("pred mask #aval_pixels: ", np.sum(mask>0), "/", np.sum(mask >=0))
 
 
     def _get_polylist_transform_callback(self):
         return self.polygonlist, self.image_transform
+    
+        
+    def _store_avalanche_properties(self, aval_numbers):
+        #print("avalanche properties:")
+        #print("date: ", self.cal_date.get_date())
+        #print("time: ", self.time_lbl.cget("text"))
+        #print("avalanche type: ", self.avalanche_type_var.get())
+        #print("avalanche size: ", self.avalanche_size_var.get())
+        #print("snow moisture: ", self.snow_moisture_var.get())
+        #print("release type: ", self.release_type_var.get())
+        time = self.time_lbl.cget("text")
+        if time == "0:0 AM":
+            time = "00:00 AM"
+        datim = str(self.cal_date.get_date()) + "T" + time
+
+        ava_type = attributes_converter.avalanche_type_converter(self.avalanche_type_var.get())
+        ava_size = attributes_converter.avalanche_size_converter(self.avalanche_size_var.get())
+        moisture = attributes_converter.snow_moisture_converter(self.snow_moisture_var.get())
+        release = attributes_converter.release_type_converter(self.release_type_var.get())
+
+
+        avalanche_properties = [datim, ava_type, ava_size, moisture, release]
+        print("avalanche properties: ", avalanche_properties)
+        
+        for _ in range(aval_numbers):
+            self.attribute_list.append(avalanche_properties)
+
 
     
     def _reset_avalanche_properties(self):
@@ -445,10 +489,10 @@ class InteractiveDemoApp(ttk.Frame):
         self._reset_time()
 
         #reset dropdown menus
-        self.avalanche_type_selection.select_clear()
-        self.avalanche_size_selection.select_clear()
-        self.snow_moisture_selection.select_clear()
-        self.release_type_selection.select_clear()
+        self.avalanche_type_var.set("UNKNOWN")
+        self.avalanche_size_var.set("UNKNOWN")
+        self.snow_moisture_var.set("UNKNOWN")
+        self.release_type_var.set("UNKNOWN")
         
 
     def _updateTime(self, time):
@@ -458,7 +502,7 @@ class InteractiveDemoApp(ttk.Frame):
 
     def _reset_time(self):
         self.time_lbl.configure(text="time unknown")
-        self._updateTime(tuple([0,0,'AM']))
+        self._updateTime(tuple([00,00,'AM']))
     
     
     def _get_time(self):
@@ -473,7 +517,7 @@ class InteractiveDemoApp(ttk.Frame):
         #theme.setPurple()
         ok_btn = tk.Button(top, text="set time", command=lambda: self._updateTime(time_picker.time()))
         ok_btn.pack()
-        unkown_time_btn = tk.Button(top, text="time unknown", command=lambda: self._resetTime())
+        unkown_time_btn = tk.Button(top, text="time unknown", command=lambda: self._reset_time())
         unkown_time_btn.pack()
         
 
@@ -587,6 +631,7 @@ class InteractiveDemoApp(ttk.Frame):
 
             if len(filename) > 0:
                 self.polygonlist = []
+                self.attribute_list = []
                 if filename[-4:] == ".tif":
                     image = self._load_image(filename)
                     self.loaded_tif = True
@@ -602,6 +647,7 @@ class InteractiveDemoApp(ttk.Frame):
                         self._reset_bbox()
                 
                 self.save_mask_btn.configure(state=tk.NORMAL)
+                self.export_db_btn.configure(state=tk.NORMAL)
                 self.load_mask_btn.configure(state=tk.NORMAL)
     
                 # Update the image name label
@@ -632,12 +678,6 @@ class InteractiveDemoApp(ttk.Frame):
                 self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
 
 
-    def translate_polygon(self, contour, translate_x, translate_y):
-        ll = []
-        for i, cnt in enumerate(contour):
-            a=5
-
-
     def _store_contours(self, contour, hierarchy):
         affine_trans = self.image_transform
         x_resolution = affine_trans[0]
@@ -648,6 +688,8 @@ class InteractiveDemoApp(ttk.Frame):
 
 
         cur_polygon_id = 0
+
+        polygon_counter = 0
 
         has_next_outer_polygon = hierarchy[0,0,0] != -1
 
@@ -702,6 +744,7 @@ class InteractiveDemoApp(ttk.Frame):
             polygonomy = geometry.Polygon(main_polygon, holes=hole_polygons)
 
             self.polygonlist.append(polygonomy)
+            polygon_counter += 1
 
             if not has_next_outer_polygon:
                 break
@@ -710,7 +753,7 @@ class InteractiveDemoApp(ttk.Frame):
             has_next_outer_polygon = hierarchy[0,cur_polygon_id,0] != -1
 
         print("polygon list: ", len(self.polygonlist))
-        return
+        return polygon_counter
 
     def _store_polygon(self):
 
@@ -718,17 +761,22 @@ class InteractiveDemoApp(ttk.Frame):
 
         if mask is None:
             return
-        
+
+        #compute contour (polygon) from mask
         contours, hierarchy = cv2.findContours(mask, cv2.RETR_TREE, cv2.CHAIN_APPROX_SIMPLE)
 
-        self._store_contours(contours, hierarchy)
-        
+        #store polygon into polygon list
+        stored_polygon_counter = self._store_contours(contours, hierarchy)
 
+        #store attributes to all stored polygons
+        self._store_avalanche_properties(stored_polygon_counter)
+        
         #update result map in the UI
         self.controller.update_result_mask()
 
         #delet clicks since they are stored
         self._reset_last_object()
+        
 
 
     def _save_polygon_callback(self):
@@ -736,8 +784,7 @@ class InteractiveDemoApp(ttk.Frame):
 
         if len(self.polygonlist) == 0:
             return
-
-
+        
         cur_polygonlist = []
         counter = 0
         for poly in self.polygonlist:
@@ -775,6 +822,12 @@ class InteractiveDemoApp(ttk.Frame):
                 mask = cv2.imread(filename)[:, :, 0] > 127
                 self.controller.set_mask(mask)
                 self._update_image()
+
+    def _export_to_DB_callback(self):
+        print("polygonlist lv95 coords: ")
+        print(self.polygonlist)
+        transformed_polylist = self._reproject_polygon_list(self.polygonlist)
+        Export.export_DB(transformed_polylist, self.attribute_list)
 
     def _about_callback(self):
         self.menubar.focus_set()
@@ -881,7 +934,7 @@ class InteractiveDemoApp(ttk.Frame):
                 return
 
         if self.image_on_canvas is None:
-            messagebox.showwarning("Warning", "Please load an image first.")
+            messagebox.showwarning("Warningget_polylist_callback", "Please load an image first.")
             return
 
         if self._check_entry(self):
@@ -952,10 +1005,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.image_on_canvas._bbox = None
 
         if self.loaded_tif:
-            self.image_resolution.set(1) #set to fixed resolution
+            self.image_resolution.set(5) #set to fixed resolution
             self._load_image(self.image_name)
         if self.loaded_dsm:
-            self.image_resolution.set(1) #set to fixed resolution
+            self.image_resolution.set(5) #set to fixed resolution
             self._load_dsm(self.dsm_name)
         
         if reset_last_object:
@@ -1001,6 +1054,16 @@ class InteractiveDemoApp(ttk.Frame):
         else:
             #self.reset_polygonlist.configure(state=tk.DISABLED)
             a=5
+
+
+        #export only works if at least one stored polygon exists
+        if len(self.polygonlist) > 0:
+            self.export_db_btn.configure(state=tk.NORMAL)
+            self.save_mask_btn.configure(state=tk.NORMAL)
+        else:
+            self.export_db_btn.configure(state=tk.DISABLED)
+            self.save_mask_btn.configure(state=tk.DISABLED)
+
 
     def _check_entry(self, widget):
         all_checked = True

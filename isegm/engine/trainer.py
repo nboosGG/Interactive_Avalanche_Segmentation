@@ -15,7 +15,6 @@ from isegm.utils.vis import draw_probmap, draw_points
 from isegm.utils.misc import save_checkpoint
 from isegm.utils.serialization import get_config_repr
 from isegm.utils.distributed import get_dp_wrapper, get_sampler, reduce_loss_dict
-from isegm.model.modeling.adapt_model import change_model_to_4chns
 from .optimizer import get_optimizer
 
 from code_noel.adjusted_models import *

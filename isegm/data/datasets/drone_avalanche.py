@@ -29,8 +29,6 @@ class DroneAvalancheDataset(ISDataset):
         self.dataset_dsm = [x.name for x in sorted(self._dsm_path.glob('*'))]
         self.masks = [x.name for x in sorted(self._masks_path.glob('*'))]
 
-
-
         if split is not None:
             X1_train, X1_val, X2_train, X2_val, y_train, y_val = train_test_split(self.dataset_ortho, self.dataset_dsm, self.masks, test_size=0.2, random_state=42)
             if split == 'train':
@@ -41,6 +39,8 @@ class DroneAvalancheDataset(ISDataset):
                 self.dataset_ortho = X1_val
                 self.dataset_dsm = X2_val
                 self.masks = y_val
+
+        
 
         self.dataset_samples = self.dataset_ortho
 
@@ -63,13 +63,15 @@ class DroneAvalancheDataset(ISDataset):
 
         instances_mask = cv2.imread(mask_path)[:, :, 0].astype(np.int32)
 
-        #print("shapes: ", np.shape(ortho), np.shape(dsm))
+        #print("name:", ortho_path, "shapes: ", np.shape(ortho), np.shape(dsm))
 
         assert(np.shape(ortho)[0] == np.shape(dsm)[0] 
                and np.shape(ortho)[1] == np.shape(dsm)[1] 
                and np.shape(dsm) == np.shape(instances_mask) 
                and "input dataset shape missmatch (of otho, dsm, mask)")
         
+        #ortho /= 255 
+
         dsm = dsm[:,:,np.newaxis]
 
         sample = np.concatenate((ortho, dsm), axis=2)
@@ -84,6 +86,5 @@ class DroneAvalancheDataset(ISDataset):
         #print("shapes: ", np.shape(sample), np.shape(instances_mask))
         #print("ortho, dsm min max: ", np.amin(ortho), np.amax(ortho), np.amin(dsm), np.amax(dsm))
         #print("min max: ", np.amin(sample), np.amax(sample), np.amin(instances_mask), np.amax(instances_mask))
-        
         return DSample(sample, instances_mask, objects_ids=[1], sample_id=index)
 

@@ -52,7 +52,7 @@ def main():
     #test_indices = get_test_indices(n_samples, test_set_size, fixed_test_indices)
     #v3 main indices
     #test_indices = np.array([3, 14,  20,  23,  24,  38,  40,  42,  48,  65,  80,  90,  95,  99, 109, 111, 113, 115,116, 117, 120, 127, 135, 143, 151, 152, 159, 162, 172, 177, 178, 179, 181, 186, 225, 227, 231, 239, 240, 241, 254, 261, 267, 271, 296, 319, 325, 333, 336, 341]).astype(int)
-    #test indices for gaussian blur sets
+    #test indices for gaussian blur sets + RGB tests
     test_indices  = np.array([ 5, 12, 16, 29, 32, 36, 37, 42, 51, 62, 71, 91, 98, 125, 129, 130, 154, 156, 158, 164, 166, 171, 185, 187, 195, 205, 206, 217, 222, 227, 242, 249, 251, 255, 256, 261, 262, 264, 279, 287, 290, 291, 309, 313, 315, 332, 336, 338, 339, 340])
     
     #print("test_ind len: ", len(test_indices))
@@ -61,7 +61,7 @@ def main():
     #build datasets
 
     folder_path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/"
-    main = "ds_v3_0p5m_NoBlur"
+    main = "ds_v3_0p5m_NoBlur_3"
     train_extension = "train"
     test_extension = "test"
 
