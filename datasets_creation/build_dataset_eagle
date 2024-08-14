@@ -1,0 +1,474 @@
+import os
+import gc
+import numpy as np
+
+from scipy.ndimage import gaussian_filter, median_filter
+
+from scipy import fftpack
+
+
+import rasterio
+import rasterio.mask
+#from rasterio.enums import Resampling
+#from rasterio.profiles import DefaultGTiffProfile
+
+
+import matplotlib.pyplot as pl
+import shapefile
+
+import cv2
+
+from PIL import Image, ImageDraw
+
+import earthpy.spatial as es
+
+
+def show_matrix(matrix, verbose: bool, title: str):
+    """visualizes a 2d matrix/array if verbose evaluates to True"""
+    if (verbose):
+        pl.imshow(matrix, cmap='hot')
+        pl.title(title)
+        pl.show()
+
+def get_bounds_from_shp(shp):
+    """get maximal bounds from an shp file 
+    by iterating over all polygons"""
+    #iterate over all points of the polygon and get the left, right, top and bottom bounds
+    top = None
+    bottom = None
+    right = None
+    left = None
+
+    if len(shp.points) == 0:
+        return False, None
+
+
+    for point in shp.points:
+        if top is None:
+            top = point[1]
+        if bottom is None:
+            bottom = point[1]
+        if right is None:
+            right = point[0]
+        if left is None:
+            left = point[0]
+
+        top = np.maximum(top, point[1])
+        bottom = np.minimum(bottom, point[1])
+        right = np.maximum(right, point[0])
+        left = np.minimum(left, point[0])
+    
+    bounds = np.array([np.floor(left), np.floor(bottom), np.ceil(right), np.ceil(top)])
+    return True, bounds.astype(int)
+
+def extend_bounds(bounds, extend, points_per_meter):
+    """extend the bounds in all direction by [extend] with a minimum shape of (600,600)"""
+
+    dist_x = bounds[2] - bounds[0]
+    dist_y = bounds[3] - bounds[1]
+
+    bound_x = extend * dist_x / 100
+    bound_y = extend * dist_y / 100
+
+    extended_bounds = np.array([bounds[0] - bound_x,
+                     bounds[1] - bound_y, 
+                     bounds[2] + bound_x, 
+                     bounds[3] + bound_y])
+    
+    #increase image to at least (600,600)
+    x_to_extend = 600 - (extended_bounds[2]-extended_bounds[0]) * points_per_meter
+    y_to_extend = 600 - (extended_bounds[3]-extended_bounds[1]) * points_per_meter
+
+    x_to_extend /= points_per_meter
+    y_to_extend /= points_per_meter
+    
+    #if to_extend uneven, some more code to get exactly 600 in each dimension
+    if x_to_extend > 0:
+        left_to_extend = x_to_extend // 2
+        right_to_extend = x_to_extend - left_to_extend
+        extended_bounds[0] -= left_to_extend
+        extended_bounds[2] += right_to_extend
+    
+    if y_to_extend > 0:
+        top_to_extend = y_to_extend // 2
+        bottom_to_extend = y_to_extend - top_to_extend
+        extended_bounds[1] -= bottom_to_extend
+        extended_bounds[3] += top_to_extend 
+
+    return extended_bounds
+
+def extend_bounds2(bounds, extend_min, extend_max, points_per_meter):
+    """extend the bounds in all direction by [extend] with a minimum shape of (600,600)"""
+    extend = np.random.uniform(extend_min, extend_max)
+
+    dist_x = bounds[2] - bounds[0]
+    dist_y = bounds[3] - bounds[1]
+
+    bound_x = extend * dist_x / 100
+    bound_y = extend * dist_y / 100
+
+    extended_bounds = np.array([bounds[0] - bound_x,
+                     bounds[1] - bound_y, 
+                     bounds[2] + bound_x, 
+                     bounds[3] + bound_y])
+    
+    
+    
+    return extended_bounds
+
+
+def create_directiories(folder_list):
+    """check if directories exist, if not create them
+    input: a list of folder paths"""
+    for path in folder_list:
+        if not os.path.exists(path):
+            # Create the directory
+            os.makedirs(path)
+            print("created: ", path)
+
+
+def window_createre(bounds, counter, some_map):
+    main_window = rasterio.windows.Window()
+    if counter == 0:
+        return 
+    
+def frag_window_bounds(window_bounds):
+    return window_bounds
+
+
+def calc_resolution(bounds, pixel_per_meter):
+    """calculate the number of pixels per dimensions"""
+    dist_x = bounds[2] - bounds[0]
+    dist_y = bounds[3] - bounds[1]
+    assert(dist_x > 0 and dist_y > 0 and "invalid bounds, critical error")
+
+    pixel_x_direc = dist_x * pixel_per_meter
+    pixel_y_direc = dist_y * pixel_per_meter
+    return tuple(np.array([pixel_y_direc, pixel_x_direc]).astype(int))
+
+def gaussian_blur(data, sigma):
+    return gaussian_filter(data, sigma)
+
+def median_blur(data, size):
+    return median_filter(data, size)
+
+
+
+
+
+def lpf(image, radius):
+    show_matrix(image, 0, "initial image")
+    image1_np = np.array(image)
+    #fft of image
+    fft1 = fftpack.fftshift(fftpack.fft2(image1_np))
+
+    #Create a low pass filter image
+    x,y = image1_np.shape[1],image1_np.shape[0]
+    #size of circle
+    #e_x,e_y=50,50
+    e_x,e_y=radius,radius
+    #create a box 
+    bbox=((x/2)-(e_x/2),(y/2)-(e_y/2),(x/2)+(e_x/2),(y/2)+(e_y/2))
+
+    low_pass=Image.new("L",(image1_np.shape[1],image1_np.shape[0]),color=0)
+    
+
+    draw1=ImageDraw.Draw(low_pass)
+    draw1.ellipse(bbox, fill=1)
+
+    low_pass_np=np.array(low_pass)
+
+    
+
+    #print("low pass shape: ", np.shape(low_pass_np))
+    show_matrix(low_pass_np.astype(np.float32), 0, "low pass filter")
+
+    #multiply both the images
+    #fft1 = np.transpose(fft1)
+    #low_pass_np = np.transpose(low_pass_np)
+    filtered=np.multiply(fft1,low_pass_np)
+
+    #inverse fft
+    ifft2 = np.real(fftpack.ifft2(fftpack.ifftshift(filtered)))
+    ifft2 = np.maximum(0, np.minimum(ifft2, 255))
+    ifft2 = ifft2.astype(np.uint8)
+
+    #print("ifft2 shape: ", np.shape(ifft2), type(ifft2[0,0]))
+
+    #cv2.imshow("lpf image", ifft2)
+    show_matrix(ifft2, 0, "blurred image")
+    return ifft2
+
+
+
+def rgb_normalization(data):
+    maxx = np.amax(data)
+    minn = np.amin(data)
+
+    data_normalized = (data - minn) / (maxx - minn)
+
+    return (data_normalized * 255).astype(np.uint8)
+
+def rgb_channel_normalization(data):
+    for i in range(3):
+        data[i,:,:] = rgb_normalization(data[i,:,:])
+
+def calc_hillshade(dsm):
+    dsm[dsm < 0] = np.nan
+    hillshade = es.hillshade(dsm)
+    return hillshade
+
+
+
+def blur(data, method):
+     #print("datashape: ", np.shape(data))
+
+    nchannels = np.shape(data)[0]
+    for i in range(nchannels):
+        if method == 1:
+            sigma = 0.25
+            data[i,:,:] = gaussian_blur(data[i,:,:], sigma)
+        elif method == 2:
+            size = 3
+            data[i,:,:] = median_blur(data[i,:,:], size)
+        elif method == 3:
+            radius = 400 #in pixels
+            #print("initial shape: ", np.shape(data))
+            #data[i,:,:] = lpf(data[i,:,:], radius)
+            #data[i,:,:] = butter_lowpass_filter()
+            data[i,:,:] = lpf(data[i,:,:], radius)
+        elif method == 4:
+            data = rgb_normalization(data)
+            break
+
+    return data
+
+def rgb_normalization1(data):
+    return data / 255
+
+def rgb_normalization2(data):
+    min_val = np.amin(data)
+    max_val = np.amax(data)
+    data = (data - min_val) / (max_val - min_val)
+    return data
+
+def dsm_to_ortho(data):
+    data = np.where(data < 0, 0, data)
+    data /= (4000*255)
+    return data.astype(np.uint8)
+
+def basic_gradient(data):
+    grad_x, grad_y = np.gradient()
+
+
+def main():
+    data_path = "/home/boosnoel/Documents/eagle_project/datasets/Sammlung/"
+    target_path = "/home/boosnoel/Documents/eagle_project/datasets/eagle_1m_ext1/"
+    path_storage_dsm = target_path + "dsm/"
+    path_storage_ortho = target_path + "images/"
+    path_storage_mask = target_path + "masks/"
+
+    create_directiories([path_storage_dsm, path_storage_ortho, path_storage_mask])
+
+    sample_counter = 0
+
+    verbose_show_data = False
+
+    ultracam_flagrgb_normalization = False
+
+    datapoints_per_meter_read = 4
+    datapoints_per_meter_write = 4
+    
+
+    extend_min = 200 #in % of the image size that gets padded in each direction
+    extend_max = 500
+
+    for folder in os.listdir(data_path):
+        print("----------------------------------")
+        print("folder name: ", folder)
+        ortho_map = None
+        dsm_map = None
+        src_polys = None
+        profile = None
+        ultracam_flag = False
+        for filename in os.listdir(data_path + folder + "/"):
+            #print("filename: ", filename)
+
+            if filename.startswith("Ortho"):
+                ortho_map = rasterio.open(data_path + folder + "/" + filename)
+                profile = ortho_map.profile
+                
+
+            if filename.endswith(".shp"):
+                src_polys = shapefile.Reader(data_path + folder + "/" + filename)
+
+        print("ortho profile: ", ortho_map.profile)
+        
+        if ortho_map is None or src_polys is None:
+            print("could not find all 2 needed files (orho, shp). skip this one: ", folder)
+            ortho_map = None
+            src_polys = None
+            gc.collect()
+            continue
+            
+        #if not ultracam_flag: #for testing reasons
+        #    continue
+
+        for iPoly in range(len(src_polys)):
+            print("sampe nr: ", sample_counter)
+
+
+            cur_poly = src_polys.shape(iPoly)
+            suceeded, shp_bounds = get_bounds_from_shp(cur_poly)
+            #print(cur_poly.bbox)
+            #print("shp bounds: ", shp_bounds)
+            #assert(False)
+
+            if not suceeded:
+                continue
+            
+            bounds_extended = extend_bounds2(shp_bounds, extend_min, extend_max, datapoints_per_meter_read)
+
+            top_left_coordinate = np.array([bounds_extended[0], bounds_extended[3]])
+
+            
+            #print("bounds: ", bounds_extended)
+            #print("data_points per meter: ", datapoints_per_meter_read)
+            shape = calc_resolution(bounds_extended, datapoints_per_meter_read)
+            height, width = shape
+
+            #prevent upscaling
+            #height = np.minimum(height, ortho_map.height)
+            #width = np.minimum(width, ortho_map.width)
+
+
+            ortho_data_read_window = rasterio.windows.from_bounds(*bounds_extended, ortho_map.transform)
+            
+
+            if np.any(np.array(ortho_data_read_window.flatten())<0):
+                print("read window: ", ortho_data_read_window)
+                print("ortho profile: ", ortho_map.profile)
+                print("bounds calculated: ", bounds_extended)
+                continue
+                assert(False and "WindowError: shapefile and .tif map do not (fully) overlap")
+
+            ortho_data = ortho_map.read(out_shape=(ortho_map.count, shape[0], shape[1]), window=ortho_data_read_window)
+
+            ortho_data = ortho_data[:3,:,:]
+
+            
+            ortho_data = np.vstack((ortho_data, ortho_data, ortho_data))
+
+
+            show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho data, blue channel")
+            #print("initial shapes: ", np.shape(ortho_data), np.shape(dsm_data))
+
+
+            #blur and downscale data
+            downscale_factor = datapoints_per_meter_read / datapoints_per_meter_write
+
+            method = 1
+            ortho_data = blur(ortho_data, method)
+            #dsm_data = blur(dsm_data, blur_method)
+
+
+            #ortho_data = rgb_normalization2(ortho_data)
+
+            #show_matrix(ortho_data[0,:,:], 1, "ortho norma")
+
+            
+
+            show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho blurred")
+
+            #now downscale
+            write_shape = calc_resolution(bounds_extended, datapoints_per_meter_write)
+            write_shape = np.array(write_shape)
+            temp_shape = write_shape[0]
+            write_shape[0] = write_shape[1]
+            write_shape[1] = temp_shape
+
+            ortho_data = np.moveaxis(ortho_data, 0, 2)
+
+            
+
+            ortho_data = cv2.resize(ortho_data, 
+                                    dsize=write_shape,
+                                    interpolation=cv2.INTER_AREA)
+
+            ortho_data = np.moveaxis(ortho_data, 2, 0)
+
+            print("data statssss: ", np.amin(ortho_data), np.amax(ortho_data))
+
+
+
+            #ortho_data[1,:,:] = hillshade
+            #ortho_data[1,:,:] = ortho_data[0,:,:]
+            #ortho_data[2,:,:] = ortho_data[0,:,:]
+            print("orhto min max stats 1: ", np.amin(ortho_data), np.amax(ortho_data))
+            #ortho_data = rgb_normalization(ortho_data)
+            rgb_channel_normalization(ortho_data)
+            print("orhto min max stats 2: ", np.amin(ortho_data), np.amax(ortho_data))
+
+            ortho_data[ortho_data * 0 != 0] = 0
+
+            print("data statsssss: ", np.amin(ortho_data), np.amax(ortho_data))
+
+            print("ortho stats: ", np.amin(ortho_data), np.amax(ortho_data), np.var(ortho_data))
+
+            show_matrix(ortho_data[0,:,:], verbose_show_data, "ortho resampled")
+
+
+            print("write shapes: ", np.shape(ortho_data))
+            print("write stats: ", np.amin(ortho_data), np.amax(ortho_data))
+
+            resolution_write = 1. / datapoints_per_meter_write
+
+            transform = ortho_map.transform
+            transform_adjusted = rasterio.Affine(resolution_write, transform[1], top_left_coordinate[0],
+                                        transform[3], -1 * resolution_write, top_left_coordinate[1])
+
+            
+
+            profile_ortho = ortho_map.profile.copy()
+            profile_ortho.update(transform=transform_adjusted, count=3, dtype='uint8')
+
+
+            _, height, width = np.shape(ortho_data)
+            profile_ortho.update(width=width, height=height)
+
+            print("ortho stats just before writing: ", np.shape(ortho_data), np.amin(ortho_data), np.amax(ortho_data))
+            map_sample_ortho = rasterio.open(path_storage_ortho + str(sample_counter) + ".tif", 'w+', **profile_ortho)
+            window_ortho_write = rasterio.windows.from_bounds(*bounds_extended, map_sample_ortho.transform)
+            map_sample_ortho.write(ortho_data.astype(np.uint8))
+
+            #print orhto as dsm
+            map_sample_dsm = rasterio.open(path_storage_dsm + str(sample_counter) + ".tif", 'w+', **profile_ortho)
+            map_sample_dsm.write(ortho_data.astype(np.uint8))
+
+            
+
+            polygon_mask, _, _ = rasterio.mask.raster_geometry_mask(map_sample_ortho, [cur_poly], invert=True)
+            polygon_mask = np.where(polygon_mask == 1, 255, 0)
+
+            print("mask shape: ", np.shape(polygon_mask))
+
+
+            show_matrix(polygon_mask, verbose_show_data, "avalange mask")
+
+            #store mask
+            profile_mask = ortho_map.profile.copy()
+            profile_mask.update(transform=transform_adjusted)
+            profile_mask.update(dtype="uint8", nodata=0, width=width, height=height, count=1)
+            #print("profile: ", profile_mask)
+            map_sample_mask = rasterio.open(path_storage_mask + str(sample_counter) + ".tif", 'w+', **profile_mask)
+
+            map_sample_mask.write_band(1, polygon_mask.astype(np.uint8))
+
+            sample_counter += 1
+            gc.collect()
+
+
+
+
+if __name__ == '__main__':
+    main()
