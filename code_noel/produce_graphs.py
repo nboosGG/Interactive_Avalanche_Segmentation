@@ -425,14 +425,271 @@ def create_mean_IoU_graph(folder_path):
 
     plt.show()
 
+def create_aug_flip_graph(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
 
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "Randomly Flip Images": 'forestgreen',
+        "No Flipping": 'red',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+            if "_NoBlur_test_NoBRS_20_Aug_Flip" in filename:
+                series_name = "Randomly Flip Images"
+            elif "_NoBlur_test_NoBRS_20_Aug_NoFlip" in filename:
+                series_name = "No Flipping"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+
+    plt.title('Augmentation Performance on Test Dataset')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [0,1]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
+def create_aug_rotation_graph(path):
+
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "No rotation": 'y',
+        "15° rotation": 'forestgreen',
+        "25° rotation": 'lime',
+        "50° rotation": 'navy',
+        "75° rotation": 'blue',
+        "90° rotation": 'lightcoral',
+        "180° rotation": 'red',
+        "LowPassFilter, radius=400p": 'crimson',
+        "wtf": 'black'
+
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+            #continue
+            if "Rot75" in filename:
+                series_name = "75° rotation"
+            elif "Rot50" in filename:
+                series_name = "50° rotation"
+            elif "Rot25" in filename:
+                series_name = "25° rotation"
+            elif "Rot15" in filename:
+                series_name = "15° rotation"
+            elif "Rot90" in filename:
+                series_name = "90° rotation"
+            elif "Rot180" in filename:
+                series_name = "180° rotation"
+            elif "NoRot" in filename:
+                series_name = "No rotation"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+
+    plt.title('Augmentation Performance on Test Dataset')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [1,4,3,2,0,5,6]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
+def create_DSM_test1_graph(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "DSM per Sample normlaization": 'lightcoral',
+        "DSM overall normalization": 'red',
+        "DSM Hillshade": 'navy',
+        "Baseline (No DSM)": 'lime',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+            #continue
+            if "DSM_only_test" in filename:
+                series_name = "DSM per Sample normlaization"
+            elif "DSM_only_max4k" in filename:
+                series_name = "DSM overall normalization"
+            elif "hillshade" in filename:
+                series_name = "DSM Hillshade"
+            elif "NoBlur" in filename:
+                series_name = "Baseline (No DSM)"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('DSM Test 1')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [1,0,2,3]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
+def create_DSM_test2_graph(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "RGH": 'y',
+        "RHB": 'red',
+        "HGB": 'navy',
+        "Baseline (RGB)": 'lime',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+            #continue
+            if "RGH" in filename:
+                series_name = "RGH"
+            elif "HGB" in filename:
+                series_name = "HGB"
+            elif "RHB" in filename:
+                series_name = "RHB"
+            elif "RGB" in filename:
+                series_name = "Baseline (RGB)"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('DSM Test 2')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [1,0,2,3]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
 
 def main():
 
     
-    file_path = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/ds_v3_0p5m_test_blurs/"
+    file_path = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/ds_v3_0p2m_test_blurs/"
 
-    create_IoU_graph_blurs(file_path)
+    #create_IoU_graph_blurs(file_path)
 
     #file_path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/experiments/evaluation_logs/others/Mv3_0p5m_wDSMt1_0522_095/ious/"
     #create_IoU_graph(file_path)
@@ -443,6 +700,20 @@ def main():
 
     file_path3 = file_path2
     #all_IoU_models_performance(file_path3)
+
+
+    file_path4 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Flip/"
+    #create_aug_flip_graph(file_path4)
+
+    file_path5 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Rotation/"
+    #create_aug_rotation_graph(file_path5)
+
+
+    file_path6 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/dsm_tests/test1/"
+    #create_DSM_test1_graph(file_path6)
+
+    file_path7 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/dsm_tests/test2/"
+    create_DSM_test2_graph(file_path7)
 
 
 

@@ -44,6 +44,16 @@ AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig0p5_test/"
 AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig1_test/"
 AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig2p5_test/"
 AVALANCHE_PATH_35: "./datasets/ds_v3_0p5m_gB_sig5_test/"
+AVALANCHE_PATH_36: "./datasets/ds_v3_0p5m_NoBlur_test/"
+AVALANCHE_PATH_37: "./datasets/ds_v3_0p5m_NoBlur_2_test/"
+AVALANCHE_PATH_38: "./datasets/ds_v3_0p5m_NoBlur_3_test/"
+AVALANCHE_PATH_39: "./datasets/ds_v3_0p5m_DSM_only_test/"
+AVALANCHE_PATH_40: "./datasets/ds_v3_0p5m_DSM_only_max4k_test/"
+AVALANCHE_PATH_41: "./datasets/ds_v3_0p5m_DSM_only_test/"
+AVALANCHE_PATH_42: "./datasets/ds_v3_0p5m_DSM_hillshade_norm_test/"
+AVALANCHE_PATH_43: "./datasets/ds_v3_0p5m_withDSM_hillshade_RGH_channel_norm_test/"
+AVALANCHE_PATH_44: "./datasets/ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_test/"
+AVALANCHE_PATH_45: "./datasets/ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test/"
 
 
 
@@ -70,6 +80,9 @@ DS_v2_0p5m: "./datasets/DS_v2_0p5m/" #dataset v2 with 0.5m resolution
 DS_v2_0p5m_test: "./datasets/DS_v2_0p5m_test/" #test dataset v2 with 0.5m resolution
 DS_v2_0p1m: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
 DS_v2_0p1m_test: "./datasets/DS_v2_0p1m_test/" #test dataset v2 with 0.1m resolution
+DS_v3_0p5m_NoBlur_2_test: "./datasets/ds_v3_0p5m_NoBlur_2_test/"
+
+
 
 DS_v3_0p2m_train: "./datasets/DS_v3_0p2m_train/"
 DS_v3_0p2m_test: "./datasets/DS_v3_0p2m_test/"
@@ -92,8 +105,26 @@ DS_v3_0p5m_lpf_r50_train: "./datasets/ds_v3_0p5m_lpf_r50_train/"
 DS_v3_0p5m_lpf_r100_train: "./datasets/ds_v3_0p5m_lpf_r100_train/"
 DS_v3_0p5m_lpf_r200_train: "./datasets/ds_v3_0p5m_lpf_r200_train/"
 DS_v3_0p5m_lpf_r400_train: "./datasets/ds_v3_0p5m_lpf_r400_train/"
-DS_v3_0p5m_NoBlur_train: "./datasets/ds_v3_0p5m_NoBlur_train/"
+ds_v3_0p5m_NoBlur_train: "./datasets/ds_v3_0p5m_NoBlur_train/"
+DS_v3_0p5m_NoBlur_RGB_0to1_train: "./datasets/ds_v3_0p5m_RGB_0to1_train/"
+DS_v3_0p5m_RGB_channel_norm_train: "./datasets/ds_v3_0p5m_RGB_channel_norm_train/"
+DS_v3_0p5m_RGB_norm_train: "./datasets/ds_v3_0p5m_RGB_norm_train/"
+ds_v3_0p5m_DSM_hillshade_norm_train: "./datasets/ds_v3_0p5m_DSM_hillshade_norm_train/"
+ds_v3_0p5m_withDSM_hillshade_GB_train: "./datasets/ds_v3_0p5m_withDSM_hillshade_GB_train/"
+ds_v3_0p5m_withDSM_hillshade_RGH_channel_norm_train: "./datasets/ds_v3_0p5m_withDSM_hillshade_RGH_channel_norm_train/"
+ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_train: "./datasets/ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_train/"
+ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test: "./datasets/ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test/"
+ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_train: "./datasets/ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_train/"
+ds_v3_0p5m_DSM_only_train: "./datasets/ds_v3_0p5m_DSM_only_train/"
+ds_v3_0p5m_DSM_only_max4k_train: "./datasets/ds_v3_0p5m_DSM_only_max4k_train/"
 
+
+
+eagle_try1: "./datasets/eagle_try1/"
+eagle_try2: "./datasets/eagle_gb0p25/"
+ealge_0p5m: "./datasets/eagle_0p5m/"
+ealge_0p25m: "./datasets/eagle_0p25m/"
+eagle_0p25m_ext200to500: "./datasets/eagle_0p25m_ext200to500/"
 
 
 # You can download the weights for HRNet from the repository:
