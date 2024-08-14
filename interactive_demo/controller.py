@@ -207,7 +207,12 @@ class InteractiveController:
     def is_incomplete_mask(self):
         return len(self.probs_history) > 0
 
-
+    @property
+    def prediction_mask(self):
+        if self.probs_history:
+            return np.where(self.current_object_prob > self.prob_thresh, 255, 0)
+        else:
+            return None
 
     @property
     def result_mask(self):

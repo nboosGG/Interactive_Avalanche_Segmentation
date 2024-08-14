@@ -76,8 +76,11 @@ class InteractiveDemoApp(ttk.Frame):
         self.map_temp_results = None
         self.use_DSM = tk.BooleanVar(value=False)
         self.load_InSAR = tk.BooleanVar(value=False)
-        self.image_resolution = tk.DoubleVar(value=1)
+        self.default_resolution = tk.DoubleVar(value=1)
+        self.image_resolution = tk.DoubleVar(value=self.default_resolution.get())
         self.fringe = tk.DoubleVar(value=0.5)
+
+        
 
         #avalanche properties variables
         self.avalanche_type_var = tk.StringVar(value="UNKNOWN")
@@ -679,6 +682,7 @@ class InteractiveDemoApp(ttk.Frame):
 
 
     def _store_contours(self, contour, hierarchy):
+        
         affine_trans = self.image_transform
         x_resolution = affine_trans[0]
         y_resolution = affine_trans[4]
@@ -693,23 +697,21 @@ class InteractiveDemoApp(ttk.Frame):
 
         has_next_outer_polygon = hierarchy[0,0,0] != -1
 
-        while(True):
-            
-            print("polygon generater state: id, continue flag:", cur_polygon_id, has_next_outer_polygon)
+        cur_polygon_list = []
 
+        while(True):
             main_polygon = []
 
             if len(contour[cur_polygon_id]) <= 3:
-                print("found small polygon (<3points). skip it")
                 if not has_next_outer_polygon:
                     break
                 cur_polygon_id = hierarchy[0,cur_polygon_id,0]
                 has_next_outer_polygon = cur_polygon_id != -1
                 continue
-
+            
+            #make polygon exterior
             for p in contour[cur_polygon_id]:
                 pp = p[0]
-                #print("pp: ", pp)
                 pp[0] = pp[0] * x_resolution + top_left_x
                 pp[1] = pp[1] * y_resolution + top_left_y
                 main_polygon.append(pp)
@@ -743,7 +745,8 @@ class InteractiveDemoApp(ttk.Frame):
             
             polygonomy = geometry.Polygon(main_polygon, holes=hole_polygons)
 
-            self.polygonlist.append(polygonomy)
+            #self.polygonlist.append(polygonomy)
+            cur_polygon_list.append(polygonomy)
             polygon_counter += 1
 
             if not has_next_outer_polygon:
@@ -752,13 +755,29 @@ class InteractiveDemoApp(ttk.Frame):
             cur_polygon_id = hierarchy[0,cur_polygon_id,0]
             has_next_outer_polygon = hierarchy[0,cur_polygon_id,0] != -1
 
-        print("polygon list: ", len(self.polygonlist))
-        return polygon_counter
+
+        if polygon_counter == 1:
+            #only one prediciton area found, easy case
+            self.polygonlist.append(cur_polygon_list[0])
+        else:
+            #multiple prediciton areas found -> mulitple polygons -> only keep largest
+            biggest_area = -1
+            id_of_biggest_area = -1
+            for id in range(len(cur_polygon_list)):
+                cur_area = cur_polygon_list[id].area
+                if cur_area > biggest_area:
+                    id_of_biggest_area = id
+                    biggest_area = cur_area
+            assert(id_of_biggest_area > -1)
+            
+            self.polygonlist.append(cur_polygon_list[id_of_biggest_area])
+
+        return 1
 
     def _store_polygon(self):
-
-        mask = (self.controller.result_mask * 255).astype(np.uint8)
-
+        """produces a polygon from the prediciton mask (only biggest connected area is considered)
+        """
+        mask = self.controller.prediction_mask.astype(np.uint8)
         if mask is None:
             return
 
@@ -1005,10 +1024,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.image_on_canvas._bbox = None
 
         if self.loaded_tif:
-            self.image_resolution.set(5) #set to fixed resolution
+            self.image_resolution.set(self.default_resolution.get()) #set to fixed resolution
             self._load_image(self.image_name)
         if self.loaded_dsm:
-            self.image_resolution.set(5) #set to fixed resolution
+            self.image_resolution.set(self.default_resolution.get()) #set to fixed resolution
             self._load_dsm(self.dsm_name)
         
         if reset_last_object:
