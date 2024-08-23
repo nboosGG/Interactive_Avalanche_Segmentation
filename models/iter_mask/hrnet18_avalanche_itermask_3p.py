@@ -39,7 +39,7 @@ def train(model, cfg, model_cfg):
         UniformRandomResize(scale_range=(0.75, 1.25)), # keep always
         HorizontalFlip(),
         Rotate(limit=10), #default 10
-        ShiftScaleRotate(shift_limit=0.005, scale_limit=0,   #shift default 0.03
+        ShiftScaleRotate(shift_limit=0.003, scale_limit=0,   #shift default 0.03
                          rotate_limit=(-3, 3), border_mode=0, p=0.75),
         PadIfNeeded(min_height=crop_size[0], min_width=crop_size[1], border_mode=0) , # keep always
         RandomCrop(*crop_size), #keep always

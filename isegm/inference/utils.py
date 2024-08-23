@@ -149,6 +149,8 @@ def get_dataset(dataset_name, cfg):
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_44)
     elif dataset_name == 'ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test':
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_45)
+    elif dataset_name == 'ds_v3_0p5m_Aug_test_set':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_46) 
     else:
         dataset = None
 

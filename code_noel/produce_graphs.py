@@ -217,7 +217,7 @@ def all_IoU_models_performance(path):
 def create_IoU_graph(path):
 
     x = np.arange(20)+1
-    y = (np.arange(6)+5)/10
+    y = (np.arange(9)+1)/10
 
     for file in os.listdir(path):
         filename = os.fsdecode(file)
@@ -231,15 +231,15 @@ def create_IoU_graph(path):
             if "Baseline" in filename:
                 series_name = "Baseline"
             elif "_0p2m" in filename:
-                series_name = "20cm_Model"
+                series_name = "20cm Model"
             elif "_0p5m" in filename:
-                series_name = "50cm_Model"
+                series_name = "50cm Model"
             elif "_1m" in filename:
-                series_name = "1m_Model"
+                series_name = "1m Model"
             elif "_2m" in filename:
-                series_name = "2m_Model"
+                series_name = "2m Model"
             elif "_5m" in filename:
-                series_name = "5m_Model"
+                series_name = "5m Model"
             else:
                 series_name = "unknown model"
             
@@ -252,7 +252,7 @@ def create_IoU_graph(path):
     plt.xlabel('Nr. of Clicks')
     plt.ylabel('mean IoU')
     handles, labels = plt.gca().get_legend_handles_labels()
-    order = [4,3,0,2,1]
+    order = [3,1,0,2,4]
     plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order])
 
     plt.xticks(x, x)
@@ -359,11 +359,11 @@ def create_mean_IoU_graph(folder_path):
     #set fixed color per model
     color_lib = {
         "Baseline": 'y',
-        "20cm_Model": 'b',
-        "50cm_Model": 'r',
-        "1m_Model": 'g',
-        "2m_Model": 'c',
-        "5m_Model": 'm'
+        "20cm Model": 'b',
+        "50cm Model": 'r',
+        "1m Model": 'g',
+        "2m Model": 'c',
+        "5m Model": 'm'
 
     }
 
@@ -391,15 +391,15 @@ def create_mean_IoU_graph(folder_path):
         if "baseline" in directory:
             series_name = "Baseline"
         elif "_0p2m" in directory:
-            series_name = "20cm_Model"
+            series_name = "20cm Model"
         elif "_0p5m" in directory:
-            series_name = "50cm_Model"
+            series_name = "50cm Model"
         elif "_1m" in directory:
-            series_name = "1m_Model"
+            series_name = "1m Model"
         elif "_2m" in directory:
-            series_name = "2m_Model"
+            series_name = "2m Model"
         elif "_5m" in directory:
-            series_name = "5m_Model"
+            series_name = "5m Model"
         else:
             series_name = "unknown model"
         
@@ -684,6 +684,198 @@ def create_DSM_test2_graph(path):
 
     plt.show()
 
+def create_aug_brigthness_shift(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "10%": 'orange',
+        "20%": 'red',
+        "50%": 'navy',
+        "70%": 'lime',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+            #continue
+            if "0p1_" in filename:
+                series_name = "10%"
+            elif "0p2_" in filename:
+                series_name = "20%"
+            elif "0p5_" in filename:
+                series_name = "50%"
+            elif "0p7_" in filename:
+                series_name = "70%"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('Random Brightness Shift')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [1,0,2,3]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
+def create_aug_img_shift(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "0.1": 'orange',
+        "0.05": 'red',
+        "0.01": 'navy',
+        "0.005": 'lime',
+        "0.5": 'lightcoral',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+
+            if "0p05_" in filename:
+                series_name = "0.05"
+            elif "0p1_" in filename:
+                series_name = "0.1"
+            elif "0p01_" in filename:
+                series_name = "0.01"
+            elif "0p005_" in filename:
+                series_name = "0.005"
+            elif "0p5_" in filename:
+                series_name = "0.5"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('Random Image Shift')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [4,1,0,3,2]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
+def create_graph_normalizations(path):
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "Baseline": 'blue',
+        "Per Channel Normalization": 'red',
+        "Overall Normalization": 'lime',
+        "wtf": 'black'
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+
+            if "Baseline" in filename:
+                series_name = "Baseline"
+            elif "channel_" in filename:
+                series_name = "Per Channel Normalization"
+            elif "RGB_normalization" in filename:
+                series_name = "Overall Normalization"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('RGB Normalization')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [1,0,2]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
 def main():
 
     
@@ -691,7 +883,7 @@ def main():
 
     #create_IoU_graph_blurs(file_path)
 
-    #file_path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/experiments/evaluation_logs/others/Mv3_0p5m_wDSMt1_0522_095/ious/"
+    file_path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/experiments/evaluation_logs/others/Mv3_0p5m_wDSMt1_0522_095/ious/"
     #create_IoU_graph(file_path)
 
     file_path2 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/mean/"
@@ -713,9 +905,16 @@ def main():
     #create_DSM_test1_graph(file_path6)
 
     file_path7 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/dsm_tests/test2/"
-    create_DSM_test2_graph(file_path7)
+    #create_DSM_test2_graph(file_path7)
 
+    file_path8 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Br_shift/"
+    #create_aug_brigthness_shift(file_path8)
 
+    file_path9 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Img_shift/"
+    #create_aug_img_shift(file_path9)
+
+    file_path10 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/RGB_normalization/"
+    create_graph_normalizations(file_path10)
 
 if __name__ == '__main__':
     main()

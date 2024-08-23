@@ -10,30 +10,28 @@ import webbrowser
 from datetime import datetime, timedelta
 import time
 
+from shapely.geometry import mapping
+import json
 import numpy as np
+
+import geopandas as gpd
+
 
 class Export():
 
 
-    def convert_poly(poly_list):
-        poly_list_adjusted = []
-        for i in range(len(poly_list)):
-            poly = poly_list[i]
+    def convert_time(time_str: str):
+        custom_date_str = "2024-08-15T00:00 AM"
+        custom_format = "%Y-%m-%dT%I:%M %p"
 
-            arr = np.array(poly.exterior.coords)
-            holes = []
-            print(np.shape(holes))
-            for interior in poly.interiors:
-                hole = np.array(interior.coords[:])
-                holes.append(hole)
-            holes = np.array(holes)
+        # Step 2: Parse the custom date string to a datetime object
+        date_obj = datetime.strptime(custom_date_str, custom_format)
 
-            if len(poly.interiors) == 0:
-                poly_list_adjusted.append(np.array([arr]))
-            else:
-                poly_list_adjusted.append(np.array([arr,holes])) 
-        
-        return poly_list_adjusted
+        # Step 3: Convert the datetime object to ISO 8601 format
+        iso_format_str = date_obj.isoformat()
+
+        return iso_format_str
+
 
     #poly_list: [polygon1, polygon2, ...]
     # attribute_list: [[time, aval_type, aval_size, snow_moisture, release_type], [...], ...]
@@ -134,22 +132,22 @@ class Export():
                             client=DeviceClient(client_id),
                             token_updater= token_updater)
         
-        poly_list_converted = Export.convert_poly(poly_list)
+        #poly_list_converted = Export.convert_poly(poly_list)
         
-        for i in range(len(poly_list_converted)):
-            poly = poly_list_converted[i]
-            #print("polygon: ", type(poly))
+        for i in range(len(poly_list)):
+            poly = poly_list[i]
+            print("polygon: ", type(poly))
             #print(poly)
             attributes = attribute_list[i]
-            #print("curr attributes: ", attributes)
-            #print(dir(poly))
+            print("poly cemtroid", poly.centroid)
+
+
+            geojson_polygon = mapping(poly)
+            geojson_location = mapping(poly.centroid)
 
             ar = oauth.post(proaval_url_v4, json = {
-            'location': {
-                'type': 'Point',
-                'coordinates': [7.44162646, 46.91366545]
-            },
-            'triggerDateTime': attribute_list[0], #datetime.now().astimezone().isoformat(),
+            'location': geojson_location,
+            'triggerDateTime': str(attributes[0]), #datetime.now().astimezone().isoformat(),
             'avalancheType': attributes[1],
             'avalancheSize': attributes[2],
             'avalancheMoisture': attributes[3],
@@ -157,11 +155,7 @@ class Export():
             'zones': [
             {
                 'type': 'AVAL_SHAPE',
-                'geo': {
-                'type': 'Polygon',
-                #'coordinates': [[[7.44125503, 46.91346396],[7.44172585, 46.91371936], [7.44178468, 46.91331609], [7.44094113, 46.91225414], [7.44098034, 46.91135349], [7.43933258, 46.91134006], [7.43890101, 46.91206595], [7.43994069,46.91237513], [7.44080383, 46.91298004], [7.44125503, 46.91346396]]]
-                'coordinates': poly.tolist()
-                }
+                'geo': geojson_polygon,
             }
             ]
             },
@@ -202,7 +196,33 @@ class Export():
                 poly_list_adjusted.append(np.array([arr,holes])) 
         
         #return poly_list_adjusted
-        
 
-    
+    def list_stripper(ll):
+        ret_ll = []
+        for l in ll:
+            ret_ll.append(l[0])
+        return ret_ll
+
+
+    def combine_shp_list(pl, al):
+
+        assert(len(pl) == len(al))
+
+        ret_l = []
+        for i in range(len(pl)):
+            el = []
+            pl_i = pl[i]
+            al_i = al[i]
+            el.append(pl_i[0])
+            el = [*el, *al_i]
+            el.append(pl_i[1])
+            ret_l.append(el)
+        return ret_l
+
+    def export_shp(poly_list, atrr_list):
+
+        comb_list = Export.combine_shp_list(poly_list, atrr_list)
+
+        gdf = gpd.GeoDataFrame(comb_list, columns=['ID', 'DateTime', 'Type', 'Size', 'Moisture', 'triggerType', 'geometry'], crs='EPSG:2056')
+        return gdf
             

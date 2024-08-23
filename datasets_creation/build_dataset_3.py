@@ -245,7 +245,7 @@ def basic_gradient(data):
 
 def main():
     data_path = "/mnt/data2/MA-data/DS_v3_Sammlung/"
-    target_path = "/mnt/data2/MA-data/ds_v3_0p5m_NoBlur_2/"
+    target_path = "/mnt/data2/MA-data/del_this/"
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
     path_storage_mask = target_path + "masks/"
@@ -261,7 +261,8 @@ def main():
     datapoints_per_meter_read = 10
     datapoints_per_meter_write = 2
     
-
+    poly_counter = 0
+    
     extend = 5 #in % of the image size that gets padded in each direction
 
     for folder in os.listdir(data_path):
@@ -302,16 +303,25 @@ def main():
         #if not ultracam_flag: #for testing reasons
         #    continue
 
-
+        poly_counter_per_tif = 0
+        
         for iPoly in range(len(src_polys)):
-            print("sampe nr: ", sample_counter)
+            #print("sampe nr: ", sample_counter)
 
 
             cur_poly = src_polys.shape(iPoly)
+
+            
+           
+
             suceeded, shp_bounds = get_bounds_from_shp(cur_poly)
 
             if not suceeded:
                 continue
+
+            poly_counter += 1
+            poly_counter_per_tif += 1
+            continue
             
             bounds_extended = extend_bounds(shp_bounds, extend, datapoints_per_meter_read)
 
@@ -460,9 +470,10 @@ def main():
 
             sample_counter += 1
             gc.collect()
+        print("poly counter per tif: ", poly_counter_per_tif)
         
 
-
+    print("poly counter: ", poly_counter)
 
 
 

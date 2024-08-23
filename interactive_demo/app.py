@@ -32,6 +32,8 @@ from shapely.ops import transform
 
 import matplotlib.pyplot as plt
 
+import pytz
+
 
 def show_matrix(arr, title: str):
     plt.imshow(arr, cmap='hot')
@@ -392,6 +394,7 @@ class InteractiveDemoApp(ttk.Frame):
         return
     
     def _list_changer(self, ll):
+        """builds a list of pairs for every item in input List with second entry being 255"""
         ll_ret = []
 
         for l in ll:
@@ -440,33 +443,80 @@ class InteractiveDemoApp(ttk.Frame):
         return self.polygonlist
 
     def _temp(self):
+        self.menubar.focus_set()
 
-        Export.temp(self.polygonlist)
+        if len(self.polygonlist) == 0:
+            return
         
-        print("polylist length: ", len(self.polygonlist))
-        print("avalanche attribute length: ", len(self.attribute_list))
+        cur_polygonlist = []
+        counter = 0
+        for poly in self.polygonlist:
 
-        mask = (self.controller.result_mask * 255).astype(np.uint8)
+            cur_polygonlist.append([counter,poly])
+            counter += 1
 
-        print("pred mask #aval_pixels: ", np.sum(mask>0), "/", np.sum(mask >=0))
+        print("#polygons found: ", counter)
+
+        attribute_list_transposed = list(map(list, zip(*self.attribute_list)))
+        print("list transposed: ", attribute_list_transposed)
+        print("items: ", attribute_list_transposed[0])
+
+        d = {'triggerDateTime': attribute_list_transposed[0], 
+             'avalancheType': attribute_list_transposed[1],
+             'avalancheSize': attribute_list_transposed[2],
+             'avalancheMoisture': attribute_list_transposed[3],
+             'triggerType': attribute_list_transposed[4],
+             'geometry': cur_polygonlist}
+
+        
+        #gdf = gpd.GeoDataFrame(attribute_list_transposed, columns=['ID','geometry'], crs='EPSG:2056', geometry=[cur_polygonlist])
+        gdf = gpd.GeoDataFrame(d, crs='EPSG:2056')
+
+        filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
+            ("SHP image", "*.shp"),
+        ], title="Save the current mask as...")
+        print("output filename: ", filename)
+
+        gdf.to_file(filename)
+
+
+
+
+        
 
 
     def _get_polylist_transform_callback(self):
         return self.polygonlist, self.image_transform
     
+    def _datime_into_iso_format(self, date):
+        time = self.time_lbl.cget("text")
+        date = str(self.cal_date.get_date())
+
+        datim_format = "%Y-%m-%d %H:%M %p"
+        datim = date+" "+time
+        try:
+            datetime_obj = datetime.strptime(datim, datim_format)
+        except ValueError as e:
+            print("error: ", e)
+        
+        
+
+        #add timezone now:
+        timezone = pytz.timezone('Europe/Berlin')
+        datetime_with_tz = timezone.localize(datetime_obj)
+
+        iso_with_tz = datetime_with_tz.isoformat()
+        return iso_with_tz
+    
+
+
         
     def _store_avalanche_properties(self, aval_numbers):
-        #print("avalanche properties:")
-        #print("date: ", self.cal_date.get_date())
-        #print("time: ", self.time_lbl.cget("text"))
-        #print("avalanche type: ", self.avalanche_type_var.get())
-        #print("avalanche size: ", self.avalanche_size_var.get())
-        #print("snow moisture: ", self.snow_moisture_var.get())
-        #print("release type: ", self.release_type_var.get())
-        time = self.time_lbl.cget("text")
-        if time == "0:0 AM":
-            time = "00:00 AM"
-        datim = str(self.cal_date.get_date()) + "T" + time
+
+
+        date = str(self.cal_date.get_date())
+
+        iso_time = self._datime_into_iso_format(date)
 
         ava_type = attributes_converter.avalanche_type_converter(self.avalanche_type_var.get())
         ava_size = attributes_converter.avalanche_size_converter(self.avalanche_size_var.get())
@@ -474,7 +524,7 @@ class InteractiveDemoApp(ttk.Frame):
         release = attributes_converter.release_type_converter(self.release_type_var.get())
 
 
-        avalanche_properties = [datim, ava_type, ava_size, moisture, release]
+        avalanche_properties = [iso_time, ava_type, ava_size, moisture, release]
         print("avalanche properties: ", avalanche_properties)
         
         for _ in range(aval_numbers):
@@ -812,8 +862,10 @@ class InteractiveDemoApp(ttk.Frame):
             counter += 1
 
         print("#polygons found: ", counter)
+
+        gdf = Export.export_shp(cur_polygonlist, self.attribute_list)
         
-        gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
+        #gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
 
         filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
             ("SHP image", "*.shp"),

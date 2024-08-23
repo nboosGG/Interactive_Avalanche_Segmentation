@@ -39,7 +39,7 @@ class attributes_converter():
         elif s == "PERSON":
             return "PERSON"
         elif s == "EXPLOSIV":
-            return "EXPLOSIV"
+            return "EXPLOSIVE"
         elif s == "SNOW GROOMER":
             return "SNOW_GROOMER"
         else:
