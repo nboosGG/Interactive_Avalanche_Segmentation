@@ -150,7 +150,28 @@ def get_dataset(dataset_name, cfg):
     elif dataset_name == 'ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test':
         dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_45)
     elif dataset_name == 'ds_v3_0p5m_Aug_test_set':
-        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_46) 
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_46)
+    elif dataset_name == 'ds_v3_0p5m_gB_sig0p5_channel_norm_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_47)
+    elif dataset_name == 'ds_v3_0p5m_gB_sig0p5_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_48)
+    elif dataset_name == 'ds_v3_0p2m_gB_sig0p5_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_49)
+    elif dataset_name == 'ds_v3_1m_gB_sig0p5_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_50)
+    elif dataset_name == 'ds_v3_1m_NoBlur_4_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_51)
+    elif dataset_name == 'ds_v3_0p5m_NoBlur_4_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_52)
+    elif dataset_name == 'ds_v3_0p2m_NoBlur_4_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_53)
+    elif dataset_name == 'ds_v3_0p2m_NoBlur_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_54)
+    elif dataset_name == 'ds_v3_0p5m_NoBlur_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_55)
+    elif dataset_name == 'ds_v3_1m_NoBlur_RGH_test':
+        dataset = DroneAvalancheDataset(cfg.AVALANCHE_PATH_56)
+
     else:
         dataset = None
 

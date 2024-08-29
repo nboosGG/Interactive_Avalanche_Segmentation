@@ -23,7 +23,7 @@ def show_matrix(matrix, verbose: bool, title: str):
 
 def main():
 
-    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/ds_v3_0p5m_NoBlur_3/"
+    path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/ds_v3_1m_NoBlur_RGH/"
 
     for folder in os.listdir(path):
         print("name: ", folder)

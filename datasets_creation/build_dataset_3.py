@@ -194,6 +194,7 @@ def rgb_normalization(data):
 def rgb_channel_normalization(data):
     for i in range(3):
         data[i,:,:] = rgb_normalization(data[i,:,:])
+    return data
 
 def calc_hillshade(dsm):
     dsm[dsm < 0] = np.nan
@@ -245,7 +246,7 @@ def basic_gradient(data):
 
 def main():
     data_path = "/mnt/data2/MA-data/DS_v3_Sammlung/"
-    target_path = "/mnt/data2/MA-data/del_this/"
+    target_path = "/mnt/data2/MA-data/ds_v3_1m_NoBlur_RGH/"
     path_storage_dsm = target_path + "dsm/"
     path_storage_ortho = target_path + "images/"
     path_storage_mask = target_path + "masks/"
@@ -259,7 +260,7 @@ def main():
     ultracam_flagrgb_normalization = True
 
     datapoints_per_meter_read = 10
-    datapoints_per_meter_write = 2
+    datapoints_per_meter_write = 1
     
     poly_counter = 0
     
@@ -319,9 +320,6 @@ def main():
             if not suceeded:
                 continue
 
-            poly_counter += 1
-            poly_counter_per_tif += 1
-            continue
             
             bounds_extended = extend_bounds(shp_bounds, extend, datapoints_per_meter_read)
 
@@ -368,6 +366,7 @@ def main():
 
             #ortho_data = rgb_normalization2(ortho_data)
 
+
             #show_matrix(ortho_data[0,:,:], 1, "ortho norma")
 
             
@@ -394,13 +393,16 @@ def main():
 
             ortho_data = np.moveaxis(ortho_data, 2, 0)
 
-            print("data statssss: ", np.amin(ortho_data), np.amax(ortho_data), np.amin(dsm_data), np.amax(dsm_data))
+            print("data statssss: ", np.amin(ortho_data), np.amax(ortho_data), np.nanmin(dsm_data), np.nanmax(dsm_data))
             
-            #hillshade = calc_hillshade(dsm_data)
+            hillshade = calc_hillshade(dsm_data)
+            
             #hillshade = np.zeros_like(dsm_data)
+            if np.nanmin(dsm_data)*0 != 0:
+                show_matrix(hillshade, 1, "hillshade")
 
 
-            #ortho_data[1,:,:] = hillshade
+            ortho_data[2,:,:] = hillshade
             #ortho_data[1,:,:] = ortho_data[0,:,:]
             #ortho_data[2,:,:] = ortho_data[0,:,:]
             print("orhto min max stats 1: ", np.amin(ortho_data), np.amax(ortho_data))

@@ -61,7 +61,7 @@ def main():
     #build datasets
 
     folder_path = "/home/boosnoel/Documents/InteractiveAvalancheSegmentation/datasets/"
-    main = "ds_v3_0p5m_NoBlur_3"
+    main = "ds_v3_1m_NoBlur_RGH"
     train_extension = "train"
     test_extension = "test"
 

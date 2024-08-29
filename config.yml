@@ -54,6 +54,17 @@ AVALANCHE_PATH_42: "./datasets/ds_v3_0p5m_DSM_hillshade_norm_test/"
 AVALANCHE_PATH_43: "./datasets/ds_v3_0p5m_withDSM_hillshade_RGH_channel_norm_test/"
 AVALANCHE_PATH_44: "./datasets/ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_test/"
 AVALANCHE_PATH_45: "./datasets/ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test/"
+AVALANCHE_PATH_46: "./datasets/ds_v3_0p5m_NoBlur_3_test/"
+AVALANCHE_PATH_47: "./datasets/ds_v3_0p5m_gB_sig0p5_channel_norm_test/"
+AVALANCHE_PATH_48: "./datasets/ds_v3_0p5m_gB_sig0p5_RGH_test/"
+AVALANCHE_PATH_49: "./datasets/ds_v3_0p2m_gB_sig0p5_RGH_test/"
+AVALANCHE_PATH_50: "./datasets/ds_v3_1m_gB_sig0p5_RGH_test/"
+AVALANCHE_PATH_51: "./datasets/ds_v3_1m_NoBlur_4_test/"
+AVALANCHE_PATH_52: "./datasets/ds_v3_0p5m_NoBlur_4_test/"
+AVALANCHE_PATH_53: "./datasets/ds_v3_0p2m_NoBlur_4_test/"
+AVALANCHE_PATH_54: "./datasets/ds_v3_0p2m_NoBlur_RGH_test/"
+AVALANCHE_PATH_55: "./datasets/ds_v3_0p5m_NoBlur_RGH_test/"
+AVALANCHE_PATH_56: "./datasets/ds_v3_1m_NoBlur_RGH_test/"
 
 
 
@@ -81,6 +92,7 @@ DS_v2_0p5m_test: "./datasets/DS_v2_0p5m_test/" #test dataset v2 with 0.5m resolu
 DS_v2_0p1m: "./datasets/DS_v2_0p1m/" #dataset v2 with 0.1m resolution
 DS_v2_0p1m_test: "./datasets/DS_v2_0p1m_test/" #test dataset v2 with 0.1m resolution
 DS_v3_0p5m_NoBlur_2_test: "./datasets/ds_v3_0p5m_NoBlur_2_test/"
+
 
 
 
@@ -117,6 +129,9 @@ ds_v3_0p5m_withDSM_hillshade_HGB_channel_norm_test: "./datasets/ds_v3_0p5m_withD
 ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_train: "./datasets/ds_v3_0p5m_withDSM_hillshade_RHB_channel_norm_train/"
 ds_v3_0p5m_DSM_only_train: "./datasets/ds_v3_0p5m_DSM_only_train/"
 ds_v3_0p5m_DSM_only_max4k_train: "./datasets/ds_v3_0p5m_DSM_only_max4k_train/"
+ds_v3_0p5m_gB_sig0p5_channel_norm_train: "./datasets/ds_v3_0p5m_gB_sig0p5_channel_norm_train/"
+ds_v3_0p5m_gB_sig0p5_RGH_train: "./datasets/ds_v3_0p5m_gB_sig0p5_RGH_train/"
+ds_v3_0p5m_NoBlur_4_train: "./datasets/ds_v3_0p5m_NoBlur_4_train/"
 
 
 

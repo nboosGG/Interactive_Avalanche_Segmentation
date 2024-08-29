@@ -876,6 +876,91 @@ def create_graph_normalizations(path):
 
     plt.show()
 
+def create_graph_final_perfromance(path):
+
+    plt.style.use('_classic_test_patch')
+    print(plt.style.available)
+    #assert(False)
+
+    x = np.arange(20)+1
+    y = (np.arange(7)+4)/10
+
+
+    #set fixed color per model
+    color_lib = {
+        "20cm Final": 'wheat',
+        "50cm Final": 'orange',
+        "1m Final": 'darkorange',
+        "Base 1m": 'forestgreen',
+        "Base 50cm": 'limegreen',
+        "Base 20cm": 'lime',
+        "1m RGH": 'deepskyblue',
+        "20cm RGH": 'blue',
+        "50cm RGH": 'skyblue',
+        "wtf": 'black'
+
+    }
+
+    for file in os.listdir(path):
+        filename = os.fsdecode(file)
+        if filename.endswith(".csv"): 
+            print("-------------------------------------------")
+            print("filename: ", filename)
+
+
+            #create_IoU_per_Clicks2(storage_path, file_path+filename)
+            series = mean_IoU(path+filename)
+            filename = filename[:-4]
+            series_name = filename[10:]
+            print("series name: ", series_name)
+
+            if "0515" in filename or "final2" in filename or "Base" in filename:
+                continue
+            
+
+            if "1m_gB_sig0p5_RGH" in filename:
+                series_name = "1m RGH"
+            elif "0p5m_gB_sig0p5_RGH" in filename:
+                series_name = "50cm RGH"
+            elif "0p2m_gB_sig0p5_RGH" in filename:
+                series_name = "20cm RGH"
+            elif "1m_NoBlur_4_test_0530" in filename:
+                series_name = "Base 1m"
+            elif "0p5m_NoBlur_4_test_0530" in filename:
+                series_name = "Base 50cm"
+            elif "0p2m_NoBlur_4_test_0530" in filename:
+                series_name = "Base 20cm"
+            elif "0p2m_NoBlur_4_test_model_final" in filename:
+                series_name = "20cm Final"
+            elif "0p5m_NoBlur_4_test_final" in filename:
+                series_name = "50cm Final"
+            elif "1m_NoBlur_4_test_final" in filename:
+                series_name = "1m Final"
+            else:
+                print("unkown model name: ", series_name)
+                series_name = "wtf"
+            
+            print("series name: ", series_name)
+            color = color_lib[series_name]
+
+            plt.plot(x, series, label=series_name, color=color)
+
+    plt.title('Final Performance Evaluation')
+    plt.xlabel('Nr. of Clicks []')
+    plt.ylabel('Mean IoU []')
+    handles, labels = plt.gca().get_legend_handles_labels()
+    print("# lines ", len(handles))
+    order = [5,8,6,7,0,3,4,2,1]
+    plt.legend([handles[idx] for idx in order],[labels[idx] for idx in order], loc='lower right')
+
+    plt.xticks(x, x)
+    plt.yticks(y, y)
+    
+
+    plt.grid()
+
+    plt.show()
+
 def main():
 
     
@@ -914,7 +999,10 @@ def main():
     #create_aug_img_shift(file_path9)
 
     file_path10 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/RGB_normalization/"
-    create_graph_normalizations(file_path10)
+    #create_graph_normalizations(file_path10)
+
+    file_path11 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/final_model/"
+    create_graph_final_perfromance(file_path11)
 
 if __name__ == '__main__':
     main()
