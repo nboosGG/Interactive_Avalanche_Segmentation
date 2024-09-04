@@ -317,7 +317,20 @@ class InteractiveDemoApp(ttk.Frame):
         FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
                              variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
+        
+        ################################################
+        #IN-SAR properties
+        self.insar_properties_frame = FocusLabelFrame(self, text="IN-SAR Properties")
+        self.insar_properties_frame.pack(side=tk.TOP, fill='x', padx=5, pady=5)
 
+        ## avalanche information
+        self.avalanche_information_frame = FocusLabelFrame(self.insar_properties_frame, text="Properties")
+        self.avalanche_information_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+
+        self.insar_fringes_frame = FocusLabelFrame(self.avalanche_information_frame, text="Fringe count")
+        self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
+                             variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
 
         
     def _nothing(self):
@@ -843,10 +856,8 @@ class InteractiveDemoApp(ttk.Frame):
 
         #export only works if at least one stored polygon exists
         if len(self.polygonlist) > 0:
-            self.export_db_btn.configure(state=tk.NORMAL)
             self.save_mask_btn.configure(state=tk.NORMAL)
         else:
-            self.export_db_btn.configure(state=tk.DISABLED)
             self.save_mask_btn.configure(state=tk.DISABLED)
 
 
