@@ -78,7 +78,7 @@ class InteractiveDemoApp(ttk.Frame):
         self.map_temp_results = None
         self.use_DSM = tk.BooleanVar(value=False)
         self.load_InSAR = tk.BooleanVar(value=False)
-        self.default_resolution = tk.DoubleVar(value=1)
+        self.default_resolution = tk.DoubleVar(value=5)
         self.image_resolution = tk.DoubleVar(value=self.default_resolution.get())
         self.fringe = tk.DoubleVar(value=0.5)
 
@@ -142,8 +142,6 @@ class InteractiveDemoApp(ttk.Frame):
 
         button = FocusButton(self.menubar, text='Load image', command=self._load_image_callback)
         button.pack(side=tk.LEFT)
-        button = FocusButton(self.menubar, text='Load DSM', command=self._load_dsm_callback)
-        button.pack(side=tk.LEFT)
 
         self.load_mask_btn = FocusButton(self.menubar, text='Load mask', command=self._load_mask_callback)
         self.load_mask_btn.pack(side=tk.LEFT)
@@ -153,20 +151,10 @@ class InteractiveDemoApp(ttk.Frame):
         self.save_mask_btn.pack(side=tk.LEFT)
         self.save_mask_btn.configure(state=tk.DISABLED)
 
-        self.export_db_btn = FocusButton(self.menubar, text="Export DB", command=self._export_to_DB_callback)
-        self.export_db_btn.pack(side=tk.LEFT)
-        self.export_db_btn.configure(state=tk.DISABLED)
-
-
 
         # Add label to display the image name
         self.image_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
         self.image_name_label.pack(side=tk.LEFT, fill='x', expand=True)
-
-        #Add label to display the dsm name
-        self.dsm_name_label = tk.Label(self.menubar, text='', anchor='e', padx=10)
-        self.dsm_name_label.pack(side=tk.LEFT, fill='x', expand=True)
-
 
         button = FocusButton(self.menubar, text='About', command=self._about_callback)
         button.pack(side=tk.LEFT)
@@ -229,13 +217,10 @@ class InteractiveDemoApp(ttk.Frame):
             FocusButton(self.shapefile_options_frame, text='Save prediction', bg='#b6d7a8', fg='black', width=15, height=2,
                         state=tk.NORMAL, command=self._store_polygon)
         self.safe_mask_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-        #self.display_all_masks_button = \
-        #    FocusButton(self.shapefile_options_frame, text='Display prev prediction', bg='#b6d7a8', fg='black', width=15, height=2,
-        #                state=tk.DISABLED, command=self._display_all_masks)
-        #self.display_all_masks_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+
         self.reset_polygonlist = \
             FocusButton(self.shapefile_options_frame, text='Reset Predicitons', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.NORMAL, command=self._temp)
+                        state=tk.DISABLED, command=self._nothing)
         self.reset_polygonlist.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
         self.temp_btn = \
@@ -248,11 +233,11 @@ class InteractiveDemoApp(ttk.Frame):
         self.use_DSM_button = \
             FocusCheckButton(self.image_prediction_frame, text='use DSM', variable=self.use_DSM, onvalue = 1, offvalue = 0,
                               height = 2, width = 15)
-        self.use_DSM_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-        #self.loadInSAR_button = \
-        #    FocusCheckButton(self.image_prediction_frame, text='load InSAR', variable=self.load_InSAR, onvalue = 1, offvalue = 0,
-        #                      height = 2, width = 15)
-        #self.loadInSAR_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
+        
+        self.loadInSAR_button = \
+            FocusCheckButton(self.image_prediction_frame, text='load InSAR', variable=self.load_InSAR, onvalue = 1, offvalue = 0,
+                              height = 2, width = 15)
+        self.loadInSAR_button.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
 
 
         #zooming not used
@@ -327,251 +312,31 @@ class InteractiveDemoApp(ttk.Frame):
         FocusHorizontalScale(self.click_radius_frame, from_=0, to=7, resolution=1, command=self._update_click_radius,
                              variable=self.state['click_radius']).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
-        #self.insar_fringes_frame = FocusLabelFrame(master, text="Fringe count")
-        #self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-        #FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
-        #                     variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
+        self.insar_fringes_frame = FocusLabelFrame(master, text="Fringe count")
+        self.insar_fringes_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
+        FocusHorizontalScale(self.insar_fringes_frame, from_=0.25, to=5, resolution=0.25, command=self._nothing,
+                             variable=self.fringe).pack(padx=10, anchor=tk.CENTER, side=tk.LEFT)
         
 
-
-                                  
-
-        ################################################
-        #avalanche properties
-        self.avalanche_properties_frame = FocusLabelFrame(self, text="Avalanche Properties")
-        self.avalanche_properties_frame.pack(side=tk.TOP, fill='x', padx=5, pady=5)
-
-        ## avalanche information
-        self.avalanche_information_frame = FocusLabelFrame(self.avalanche_properties_frame, text="Avalanche Information")
-        self.avalanche_information_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-
-        #self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:   not calculated yet')
-        self.avalanche_area_lbl = tk.Label(self.avalanche_information_frame, text='Avalanche Area:  ')
-        self.avalanche_area_lbl.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-
-
-        ## avalanche date entry
-        self.release_date_frame = FocusLabelFrame(self.avalanche_properties_frame, text="Release Date + Time")
-        self.release_date_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-
-        self.cal_date = DateEntry(self.release_date_frame, width=12, background='darkblue',
-                                  foreground='white', borderwidth=2)
-        self.cal_date.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-
-        self.time_lbl = tk.Label(self.release_date_frame, text='Time:')
-        self.time_lbl.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=3)
-
-        self.release_time_btn = FocusButton(self.release_date_frame, text='Set Time', bg='#b6d7a8', fg='black', width=15, height=2,
-                        state=tk.NORMAL, command=self._get_time)
-        self.release_time_btn.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
-
-
-        ## avalanche type entry
-        ### part 1
-        self.avalanche_type_frame = FocusLabelFrame(self.avalanche_properties_frame, text="     Avalanche Type     |     Avalanche Size    |")
-        self.avalanche_type_frame.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-
-        self.avalanche_type_selection = ttk.Combobox(self.avalanche_type_frame, textvariable=self.avalanche_type_var, state="readonly", values=["SLAB", "GLIDE SNOW", "LOOSE SNOW", "UNKNOWN"])
-        self.avalanche_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
-        
-        self.avalanche_size_selection = ttk.Combobox(self.avalanche_type_frame, textvariable=self.avalanche_size_var, state="readonly", values=["1", "2", "3", "4", "5", "UNKNOWN"])
-        self.avalanche_size_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
-
-
-        ### part 2
-        self.avalanche_type_frame2 = FocusLabelFrame(self.avalanche_properties_frame, text="     Snow Moisture      |     Release Type      |")
-        self.avalanche_type_frame2.pack(side=tk.TOP, fill=tk.X, padx=10, pady=3)
-
-        self.snow_moisture_selection = ttk.Combobox(self.avalanche_type_frame2, textvariable=self.snow_moisture_var, state="readonly", values=["WET", "DRY", "UNKNOWN"])
-        self.snow_moisture_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
-
-        self.release_type_selection = ttk.Combobox(self.avalanche_type_frame2, textvariable=self.release_type_var, state="readonly", values=["NATURAL", "PERSON", "EXPLOSIV", "SNOW GROOMER", "UNKNOWN"])
-        self.release_type_selection.pack(side=tk.LEFT, fill=tk.X, padx=10, pady=10)
 
         
     def _nothing(self):
         """empty function to use as playceholder"""
         return
-    
-    def _list_changer(self, ll):
-        """builds a list of pairs for every item in input List with second entry being 255"""
-        ll_ret = []
-
-        for l in ll:
-            ll_ret.append((l,255))
-        return ll_ret
-    
-    def _translate_polygon(self, polylist, aff: rasterio.Affine):
-        #toDo: iterate over polygon, and subtract topleft coordinate, then also multiply with resolution
-        x_offset = aff[2]
-        y_offset = aff[5]
-
-        ret_poly_list = []
-
-
-        for poly in polylist:
-            xx, yy = poly.exterior.coords.xy
-            #print(xx, yy)
-
-            xx = np.subtract(xx, int(x_offset))
-            yy = np.subtract(int(y_offset), yy)
-
-            ret_poly_list.append(geometry.Polygon(zip(xx,yy)))
-        
-        return ret_poly_list
-    
-    
-    def _reproject_polygon_list(self, polygonlist):
-        npoly = len(polygonlist)
-
-        from_epsg = pyproj.CRS('EPSG:2056')
-        to_epsg = pyproj.CRS('EPSG:4326')
-        project = pyproj.Transformer.from_crs(from_epsg, to_epsg, always_xy=True).transform
-
-        polylist_transformed = []
-
-
-        for poly in polygonlist:
-            poly_transformed = transform(project, poly)
-            polylist_transformed.append(poly_transformed)
-
-        return polylist_transformed
-
-
-
-    def _get_current_stored_polygons(self):
-        return self.polygonlist
 
     def _temp(self):
         self.menubar.focus_set()
 
         if len(self.polygonlist) == 0:
             return
-        
-        cur_polygonlist = []
-        counter = 0
-        for poly in self.polygonlist:
-
-            cur_polygonlist.append([counter,poly])
-            counter += 1
-
-        print("#polygons found: ", counter)
-
-        attribute_list_transposed = list(map(list, zip(*self.attribute_list)))
-        print("list transposed: ", attribute_list_transposed)
-        print("items: ", attribute_list_transposed[0])
-
-        d = {'triggerDateTime': attribute_list_transposed[0], 
-             'avalancheType': attribute_list_transposed[1],
-             'avalancheSize': attribute_list_transposed[2],
-             'avalancheMoisture': attribute_list_transposed[3],
-             'triggerType': attribute_list_transposed[4],
-             'geometry': cur_polygonlist}
-
-        
-        #gdf = gpd.GeoDataFrame(attribute_list_transposed, columns=['ID','geometry'], crs='EPSG:2056', geometry=[cur_polygonlist])
-        gdf = gpd.GeoDataFrame(d, crs='EPSG:2056')
-
-        filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
-            ("SHP image", "*.shp"),
-        ], title="Save the current mask as...")
-        print("output filename: ", filename)
-
-        gdf.to_file(filename)
+        print("Hello Word, from _temp")
 
 
-
-
-        
 
 
     def _get_polylist_transform_callback(self):
         return self.polygonlist, self.image_transform
     
-    def _datime_into_iso_format(self, date):
-        time = self.time_lbl.cget("text")
-        date = str(self.cal_date.get_date())
-
-        datim_format = "%Y-%m-%d %H:%M %p"
-        datim = date+" "+time
-        try:
-            datetime_obj = datetime.strptime(datim, datim_format)
-        except ValueError as e:
-            print("error: ", e)
-        
-        
-
-        #add timezone now:
-        timezone = pytz.timezone('Europe/Berlin')
-        datetime_with_tz = timezone.localize(datetime_obj)
-
-        iso_with_tz = datetime_with_tz.isoformat()
-        return iso_with_tz
-    
-
-
-        
-    def _store_avalanche_properties(self, aval_numbers):
-
-
-        date = str(self.cal_date.get_date())
-
-        iso_time = self._datime_into_iso_format(date)
-
-        ava_type = attributes_converter.avalanche_type_converter(self.avalanche_type_var.get())
-        ava_size = attributes_converter.avalanche_size_converter(self.avalanche_size_var.get())
-        moisture = attributes_converter.snow_moisture_converter(self.snow_moisture_var.get())
-        release = attributes_converter.release_type_converter(self.release_type_var.get())
-
-
-        avalanche_properties = [iso_time, ava_type, ava_size, moisture, release]
-        print("avalanche properties: ", avalanche_properties)
-        
-        for _ in range(aval_numbers):
-            self.attribute_list.append(avalanche_properties)
-
-
-    
-    def _reset_avalanche_properties(self):
-        #reset all avalanche properties
-        #reset date
-        today = datetime.now().date()
-        self.cal_date.set_date(today)
-        
-        #reset time:
-        self._reset_time()
-
-        #reset dropdown menus
-        self.avalanche_type_var.set("UNKNOWN")
-        self.avalanche_size_var.set("UNKNOWN")
-        self.snow_moisture_var.set("UNKNOWN")
-        self.release_type_var.set("UNKNOWN")
-        
-
-    def _updateTime(self, time):
-        print("time datatype: ", type(time), time, type(time[0]), type(time[2]))
-
-        self.time_lbl.configure(text="{}:{} {}".format(*time)) # remove 3rd flower bracket in case of 24 hrs time
-
-    def _reset_time(self):
-        self.time_lbl.configure(text="time unknown")
-        self._updateTime(tuple([00,00,'AM']))
-    
-    
-    def _get_time(self):
-        top = tk.Toplevel(self)
-
-        time_picker = AnalogPicker(top, type=constants.HOURS12)
-        time_picker.pack(expand=True, fill="both")
-
-        theme = AnalogThemes(time_picker)
-        theme.setDracula()
-        #theme.setNavyBlue()
-        #theme.setPurple()
-        ok_btn = tk.Button(top, text="set time", command=lambda: self._updateTime(time_picker.time()))
-        ok_btn.pack()
-        unkown_time_btn = tk.Button(top, text="time unknown", command=lambda: self._reset_time())
-        unkown_time_btn.pack()
         
 
     def _calculate_resolution(self, bounds):
@@ -648,30 +413,6 @@ class InteractiveDemoApp(ttk.Frame):
         self.current_bounds = np.array(bounds)
         self.cur_shape = np.shape(np.array(image))
         return image
-    
-    def _load_dsm(self, filename, bounds=None, use_current_bounds=False):
-        print("load dsm2 called")
-        map = rasterio.open(filename)
-        if bounds is None:
-            if use_current_bounds:
-                bounds = self.current_bounds
-            else:
-                bounds = map.bounds
-        assert(bounds is not None)
-
-        out_shape = self._calculate_resolution(bounds)
-
-        window = rasterio.windows.from_bounds(*bounds, map.transform)
-
-        #print("widnow dir: ", dir(window))
-
-        image = map.read(window=window, out_shape=(map.count, out_shape[0], out_shape[1]))
-        image = np.rollaxis(image, 0,3) #from [1,ydim,xdim] to [ydim,xdim,1]
-
-        self.controller.set_dsm(image, self.image_name)
-
-        self.map_dsm = map
-        return image
 
     def _load_image_callback(self):
         self.menubar.focus_set()
@@ -709,27 +450,6 @@ class InteractiveDemoApp(ttk.Frame):
                 #update some UI stuff
                 #reset avalanche properties
                 self._reset_avalanche_properties()
-
-
-    def _load_dsm_callback(self):
-        self.menubar.focus_set()
-        if self._check_entry(self):
-            filename = filedialog.askopenfilename(parent=self.master, filetypes=[
-                ("DSM", "*.tif"),
-                ("All files", "*.*"),
-            ], title="Chose a DSM file")
-            self.dsm_name = Path(filename).stem
-            print("dsm name: ", self.dsm_name)
-
-            if len(filename) > 0:
-                #image = cv2.cvtColor(cv2.imread(filename), cv2.COLOR_BGR2RGB)
-                #dsm = cv2.imread(filename, cv2.IMREAD_GRAYSCALE) #maybe for real dsm this needs to be used
-                print("entered _load_dsm call")
-                self._load_dsm(filename)
-                self.loaded_dsm = True
-                self.dsm_name = filename
-                self.dsm_name_label.config(text=f'DSM: {self.dsm_name}')
-
 
     def _store_contours(self, contour, hierarchy):
         
@@ -805,12 +525,13 @@ class InteractiveDemoApp(ttk.Frame):
             cur_polygon_id = hierarchy[0,cur_polygon_id,0]
             has_next_outer_polygon = hierarchy[0,cur_polygon_id,0] != -1
 
+        #from all polygons found, only actually store the one with the largest area
 
         if polygon_counter == 1:
             #only one prediciton area found, easy case
             self.polygonlist.append(cur_polygon_list[0])
         else:
-            #multiple prediciton areas found -> mulitple polygons -> only keep largest
+            #multiple prediciton areas found -> multiple polygons -> only keep largest
             biggest_area = -1
             id_of_biggest_area = -1
             for id in range(len(cur_polygon_list)):
@@ -836,9 +557,6 @@ class InteractiveDemoApp(ttk.Frame):
 
         #store polygon into polygon list
         stored_polygon_counter = self._store_contours(contours, hierarchy)
-
-        #store attributes to all stored polygons
-        self._store_avalanche_properties(stored_polygon_counter)
         
         #update result map in the UI
         self.controller.update_result_mask()
@@ -863,9 +581,8 @@ class InteractiveDemoApp(ttk.Frame):
 
         print("#polygons found: ", counter)
 
-        gdf = Export.export_shp(cur_polygonlist, self.attribute_list)
-        
-        #gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
+        #gdf = Export.export_shp(cur_polygonlist, self.attribute_list)
+        gdf = gpd.GeoDataFrame(cur_polygonlist, columns=['ID','geometry'], crs='EPSG:2056', geometry='geometry')
 
         filename = filedialog.asksaveasfilename(parent=self.master, initialfile=f'{self.image_name}.png', filetypes=[
             ("SHP image", "*.shp"),
@@ -873,6 +590,8 @@ class InteractiveDemoApp(ttk.Frame):
         print("output filename: ", filename)
 
         gdf.to_file(filename)
+
+
 
 
 
@@ -894,11 +613,6 @@ class InteractiveDemoApp(ttk.Frame):
                 self.controller.set_mask(mask)
                 self._update_image()
 
-    def _export_to_DB_callback(self):
-        print("polygonlist lv95 coords: ")
-        print(self.polygonlist)
-        transformed_polylist = self._reproject_polygon_list(self.polygonlist)
-        Export.export_DB(transformed_polylist, self.attribute_list)
 
     def _about_callback(self):
         self.menubar.focus_set()
