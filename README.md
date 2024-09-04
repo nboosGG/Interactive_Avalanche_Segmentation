@@ -1,3 +1,51 @@
+# Mapping In-SAR Images with Interactive Segmentation Models
+
+
+
+
+
+
+
+
+
+
+
+
+## Start GUI on Workstation
+
+
+
+
+Start GUI:
+```.bash
+# first open the conda environment 
+conda activate ias_ui5
+# This command runs interactive demo with an In-SAR model on GPU with id=0
+# --checkpoint can be relative to cfg.INTERACTIVE_MODELS_PATH or absolute path to the checkpoint
+# If you also do not have a lot of GPU memory, you can reduce --limit-longest-size (default=800)
+python3 demo.py --checkpoint=weights/Eagle_0p25_pad200_500.pth --gpu=0 --limit-longest-size=4000
+
+
+
+# You can try the demo in CPU only mode
+python3 demo.py --checkpoint=weights/Eagle_0p25_pad200_500.pth --cpu
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 ## Reviving Iterative Training with Mask Guidance for Interactive Segmentation 
 
 <p align="center">
