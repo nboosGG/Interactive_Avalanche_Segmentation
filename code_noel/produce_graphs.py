@@ -569,7 +569,7 @@ def create_DSM_test1_graph(path):
 
     #set fixed color per model
     color_lib = {
-        "DSM per Sample normlaization": 'lightcoral',
+        "DSM per Sample normalization": 'lightcoral',
         "DSM overall normalization": 'red',
         "DSM Hillshade": 'navy',
         "Baseline (No DSM)": 'lime',
@@ -589,7 +589,7 @@ def create_DSM_test1_graph(path):
             print("series name: ", series_name)
             #continue
             if "DSM_only_test" in filename:
-                series_name = "DSM per Sample normlaization"
+                series_name = "DSM per Sample normalization"
             elif "DSM_only_max4k" in filename:
                 series_name = "DSM overall normalization"
             elif "hillshade" in filename:
@@ -711,9 +711,10 @@ def create_aug_brigthness_shift(path):
 
             #create_IoU_per_Clicks2(storage_path, file_path+filename)
             series = mean_IoU(path+filename)
+            print("series: ", series)
             filename = filename[:-4]
             series_name = filename[10:]
-            print("series name: ", series_name)
+            #print("series name: ", series_name)
             #continue
             if "0p1_" in filename:
                 series_name = "10%"
@@ -912,7 +913,7 @@ def create_graph_final_perfromance(path):
             series = mean_IoU(path+filename)
             filename = filename[:-4]
             series_name = filename[10:]
-            print("series name: ", series_name)
+            
 
             if "0515" in filename or "final2" in filename or "Base" in filename:
                 continue
@@ -942,6 +943,9 @@ def create_graph_final_perfromance(path):
             
             print("series name: ", series_name)
             color = color_lib[series_name]
+
+            print("series name: ", series_name)
+            print("series: ", series)
 
             plt.plot(x, series, label=series_name, color=color)
 
@@ -986,13 +990,13 @@ def main():
     #create_aug_rotation_graph(file_path5)
 
 
-    file_path6 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/dsm_tests/test1/"
+    file_path6 = "C:/Users/noelb/OneDrive/Documents/ETH/MA/data/graphs/ds_v3/iou_data/dsm_tests/test1/"
     #create_DSM_test1_graph(file_path6)
 
     file_path7 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/dsm_tests/test2/"
     #create_DSM_test2_graph(file_path7)
 
-    file_path8 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Br_shift/"
+    file_path8 = "C:/Users/noelb/OneDrive/Documents/ETH/MA/data/graphs/ds_v3/iou_data/Aug_Br_shift/"
     #create_aug_brigthness_shift(file_path8)
 
     file_path9 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/Aug_Img_shift/"
@@ -1001,7 +1005,7 @@ def main():
     file_path10 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/RGB_normalization/"
     #create_graph_normalizations(file_path10)
 
-    file_path11 = "/home/boosnoel/Documents/data/graphs/ds_v3/iou_data/final_model/"
+    file_path11 = "C:/Users/noelb/OneDrive/Documents/ETH/MA/data/graphs/ds_v3/iou_data/final_model/"
     create_graph_final_perfromance(file_path11)
 
 if __name__ == '__main__':
