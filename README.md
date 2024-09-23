@@ -1,3 +1,16 @@
+Repo forked from https://github.com/aval-e/InteractiveAvalancheSegmentation 
+wich in term forked from https://github.com/SamsungLabs/ritm_interactive_segmentation.
+
+
+
+
+
+
+
+
+
+
+
 ## Reviving Iterative Training with Mask Guidance for Interactive Segmentation 
 
 <p align="center">
