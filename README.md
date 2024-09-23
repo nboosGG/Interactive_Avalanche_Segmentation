@@ -1,8 +1,12 @@
+## Interactive Avalanche Segmentation Model on Drone Imagery
+
+A tool to combine expert knowledge with the machine learning ablilities to map avalanches fast and precise.
+
+
+
+### Source
 Repo forked from https://github.com/aval-e/InteractiveAvalancheSegmentation 
-wich in term forked from https://github.com/SamsungLabs/ritm_interactive_segmentation.
-
-
-
+which in term forked from https://github.com/SamsungLabs/ritm_interactive_segmentation.
 
 
 
